@@ -26,8 +26,6 @@
         var resizeNextContent = false;
         var height;
         var width;
-        var updateWindowRight = false;
-        var urlWindowRight = false;
         var eventTargetWinLeft = false;
         var eventTargetWinRight = false;
 
@@ -50,35 +48,39 @@
         }
 
 
-        function closeHandler(windowId) {
-          /*  if (doLog) {
-                console.log('Window removed', windowId);
-            }
+       function closeHandlerTabWindowLeft() {
+            console.log('LEFT TAB WAS CLOSED');
 
-            if (windowId === windowRight.id) {
-                chrome.windows.update(originWindow.id, {
-                    left: originWindow.left,
-                    top: originWindow.top,
-                    width: originWindow.width,
-                    height: originWindow.height,
-                    focused: originWindow.focused
-                });
-
-                windowRight = false;
-            } else if (windowId = originWindow.id && windowRight.id) {
-                chrome.windows.update(windowRight.id, {
-                    left: originWindow.left,
-                    top: originWindow.top,
-                    width: originWindow.width,
-                    height: originWindow.height,
-                    focused: originWindow.focused
-                });
-
-                windowRight = false;
-            }*/
+            eventTargetWinLeft = false;
         }
 
-        safari.application.addEventListener("close", closeHandler, true);
+        function closeHandlerTabWindowRight(){
+            console.log('RIGHT TAB WAS CLOSED');
+
+            eventTargetWinRight = false;
+        }
+
+        function closeHandlerWindowLeft(){
+            console.log('LEFT WINDOW WAS CLOSED');
+            console.log('WINDOW RIGHT IS: ' , windowRight);
+            if(windowRight !== false){
+              console.log('windowRight is not false, sending resizeWindow');
+                windowRight.tabs[0].page.dispatchMessage('message', {resizeWindow: true, width: width, height: height});
+                windowRight.activate();
+                windowRight = false;
+            }
+        }
+
+        function closeHandlerWindowRight(){
+            console.log('RIGHT WINDOW WAS CLOSED');
+
+            if(windowLeft !== false){
+                windowLeft.tabs[0].page.dispatchMessage('message', {resizeWindow: true, width: width, height: height});
+                windowLeft.activate();
+                windowRight = false;
+            }
+        }
+
 
         var xhr = new XMLHttpRequest();
         xhr.open('GET', DATA_URL, true);
@@ -112,34 +114,37 @@
                 if (windowRight === false) {
                     resizeNextContent = true;
           					windowRight = safari.application.openBrowserWindow();
+
+                    console.log('!!!!WINDOW RIGHT!!!!!: ', windowRight);
+
+                    windowRight.addEventListener('close', closeHandlerWindowRight, true);
           					var activeTab = windowRight.tabs[0];
           					activeTab.url = link;
-          					eventTargetWinLeft.page.dispatchMessage("message",{resizeWindowLeft: true, width: windowWidth, height: windowHeight, windowName: 'windowLeft'});
-
+          					eventTargetWinLeft.page.dispatchMessage("message",{resizeWindow: true, width: width/2, height: height});
                 }
                 else {
                     if (doLog) {
                         console.log('Should update alternate window');
                     }
 
-                    updateWindowRight = true;
-                    urlWindowRight = link;
+
+                    //Add checks for if tabs exist and create if they don't
+
+
 
                     //If the search was made from window to the right
                     //Update left window with correct URL
                     if (searchOriginWindow.page === eventTargetWinRight.page) {
                         eventTargetWinLeft.url = originLink;
                         eventTargetWinLeft.activate();
-                      //  eventTargetWinLeft.page.dispatchMessage('message', {updateWindowURL: true, url: originLink});
                     }
 
                     //Update right window with the correct URL
                     eventTargetWinRight.url = link;
                     eventTargetWinRight.activate();
-                //    eventTargetWinRight.page.dispatchMessage('message', {updateWindowURL: true, url: link});
-
                 }
-            } else {
+            }
+            else {
                 if (doLog) {
                     console.log('currentURL and/or currentTerms is undefined');
                 }
@@ -200,7 +205,7 @@
 
         safari.application.addEventListener('message', function(MessageEvent) {
             console.log("received msg");
-			console.log(MessageEvent.target.browserWindow);
+			      console.log(MessageEvent.target.browserWindow);
 
             var queryOptions = {};
             console.log(MessageEvent.message.action);
@@ -208,7 +213,7 @@
 
                 case 'resize':
                     if(resizeNextContent === true){
-                        MessageEvent.target.page.dispatchMessage("message", {'resize': true, 'width': width, 'height': height});
+                        MessageEvent.target.page.dispatchMessage("message", {'resizeWindow': true, 'width': width/2, 'height': height});
                         resizeNextContent = false;
                     }
                     break;
@@ -228,12 +233,17 @@
                     }
 
                     if(eventTargetWinLeft === false){
+                        console.log('SETTING WINDOW LEFT TO eventTargetWinLeft.browserWindow');
                         eventTargetWinLeft = MessageEvent.target;
+                        eventTargetWinLeft.addEventListener('close', closeHandlerTabWindowLeft, true);
+                        windowLeft = eventTargetWinLeft.browserWindow;
+                        windowLeft.addEventListener('close', closeHandlerWindowLeft, true);
                     }
 
                     else if(MessageEvent.target !== eventTargetWinLeft){
                         console.log('search was made from right window');
                         eventTargetWinRight = MessageEvent.target;
+                        eventTargetWinRight.addEventListener('close', closeHandlerTabWindowRight, true);
                     }
 
                     MessageEvent.message.term = MessageEvent.message.term.toLowerCase();

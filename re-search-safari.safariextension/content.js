@@ -24,16 +24,11 @@
 			}
 	}
 
-	function resizeWindowLeft(width, height){
-		console.log('in resizeWindow LEFT');
-		window.resizeTo(width/2, height);
+	function resizeWindow(width, height){
+			console.log('IN RESIZE WINDOW FOR URL: ', window.location.href);
+			console.log('WIDTH TO RESIZE TO: ', width);
+			window.resizeTo(width, height);
 	}
-
-	function resizeWindowRight(width, height){
-		console.log('in resizeWindow RIGHT');
-		window.resizeTo(width/2, height);
-	}
-
 
 	function getTitle() {
 		// http://perfectionkills.com/the-poor-misunderstood-innerText/
@@ -210,28 +205,10 @@
 				}
 		}
 
-		else if(response.message.hasOwnProperty('resizeWindowLeft')) {
-			console.log('received resize window left');
-			console.log('response from background: ', response.message.resizeWindowLeft);
-			windowName = response.message.windowName;
-			resizeWindowLeft(response.message.width, response.message.height);
-		}
-
-		else if(response.message.hasOwnProperty('resizeWindowRight')){
-			console.log('received resize window right');
-			console.log('response from background: ', response.message.resizeWindowRight);
-			resizeWindowRight(response.message.width, response.message.height);
-		}
-
-		else if(response.message.hasOwnProperty('resize')){
+		else if(response.message.hasOwnProperty('resizeWindow')){
 			console.log('Should resize window');
-			resizeWindowRight(response.message.width, response.message.height);
+			resizeWindow(response.message.width, response.message.height);
 		}
-
-		else if(response.message.hasOwnProperty('updateWindowURL')){
-			window.location.href = response.message.url;
-		}
-
 	}, false);
 
 
