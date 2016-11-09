@@ -18,14 +18,19 @@
         var currentURL;
         var jsonData;
         var doLog = true;
-        var alternateWindow = false;
-        var originWindow = false;
+        var windowRight = false;
+        var windowLeft = false;
 
         var DATA_URL = 'https://api.myjson.com/bins/1rq4a';
         var temp;
-		
-		
-		
+        var resizeNextContent = false;
+        var height;
+        var width;
+        var updateWindowRight = false;
+        var urlWindowRight = false;
+        var eventTargetPageWinLeft = false;
+        var eventTargetPageWinRight = false;
+
         //First time running script to check what value runState is in chrome storage.
         //If runState is undefined it is gets set to enabled otherwise it gets the value.
 
@@ -46,11 +51,11 @@
 
 
         function closeHandler(windowId) {
-            if (doLog) {
+          /*  if (doLog) {
                 console.log('Window removed', windowId);
             }
 
-            if (windowId === alternateWindow.id) {
+            if (windowId === windowRight.id) {
                 chrome.windows.update(originWindow.id, {
                     left: originWindow.left,
                     top: originWindow.top,
@@ -59,9 +64,9 @@
                     focused: originWindow.focused
                 });
 
-                alternateWindow = false;
-            } else if (windowId = originWindow.id && alternateWindow.id) {
-                chrome.windows.update(alternateWindow.id, {
+                windowRight = false;
+            } else if (windowId = originWindow.id && windowRight.id) {
+                chrome.windows.update(windowRight.id, {
                     left: originWindow.left,
                     top: originWindow.top,
                     width: originWindow.width,
@@ -69,8 +74,8 @@
                     focused: originWindow.focused
                 });
 
-                alternateWindow = false;
-            }
+                windowRight = false;
+            }*/
         }
 
         safari.application.addEventListener("close", closeHandler, true);
@@ -84,11 +89,17 @@
         }
         xhr.send();
 
-        function showWindows(request, newTerm, windowObject) {
-			console.log("inne i showwindows");
+        function showWindows(request, newTerm, windowWidth, windowHeight, searchOriginWindow) {
+			      console.log("inne i showwindows");
             if (doLog) {
                 console.log(request.term);
+        				console.log(windowWidth);
+        				console.log(windowHeight);
             }
+
+            console.log('TESTING HERE, eventTargetPageWinLeft: ', eventTargetPageWinLeft);
+            width = windowWidth;
+            height = windowHeight;
 
             if (currentURL !== 'undefined') {
                 var link = currentURL + newTerm;
@@ -97,59 +108,31 @@
                 if (doLog) {
                     console.log('Link: ', link);
                 }
-				console.log("alternatewindow",alternateWindow);
-                if (alternateWindow === false) {
-					
-					
-					
-					
-					
-					
-					var window = safari.application.activeBrowserWindow;
-					
-                  
+				        console.log("windowRight",windowRight);
 
-                        originWindow = window;
-						console.log("har e originwindow brooor!")
-						console.log(originWindow);
-                        safari.application.openBrowserWindow({
-                            height: parseInt(window.height, 10),
-                            left: parseInt(window.left + (window.width / 2), 10),
-                            state: 'normal',
-                            top: parseInt(window.top, 10),
-                            type: 'normal',
-                            url: link,
-                            width: parseInt(window.width / 2, 10)
-                        }, function(createdWindowData) {
-                            alternateWindow = createdWindowData;
-                        });
+                if (windowRight === false) {
+                    resizeNextContent = true;
+          					windowRight = safari.application.openBrowserWindow();
+          					var activeTab = windowRight.tabs[0];
+          					activeTab.url = link;
+          					eventTargetPageWinLeft.dispatchMessage("message",{resizeWindowLeft: true, width: windowWidth, height: windowHeight, windowName: 'windowLeft'});
 
-                        chrome.windows.update(window.id, {
-                            left: parseInt(window.left, 10),
-                            state: 'normal',
-                            top: parseInt(window.top, 10),
-                            width: parseInt(window.width / 2, 10)
-                        });
-
-                } else {
+                }
+                else {
                     if (doLog) {
                         console.log('Should update alternate window');
                     }
 
-                    if (windowObject === alternateWindow) {
-                        chrome.tabs.query({
-                            active: true,
-                            windowId: originWindow.id
-                        }, function(tabs) {
-                            chrome.tabs.update(tabs[0].id, {
-                                url: originLink
-                            });
-                        });
+                    updateWindowRight = true;
+                    urlWindowRight = link;
+
+                    //If the search was made from window to the right
+                    if (searchOriginWindow === eventTargetPageWinRight) {
+                        eventTargetPageWinLeft.dispatchMessage('message', {updateWindowURL: true, url: originLink});
                     }
 
-                    chrome.tabs.update(alternateWindow.tabs[0].id, {
-                        url: link
-                    });
+                    eventTargetPageWinRight.dispatchMessage('message', {updateWindowURL: true, url: link});
+
                 }
             } else {
                 if (doLog) {
@@ -158,9 +141,10 @@
             }
         }
 
-        function getEngineInformation(request) {
+        function getEngineInformation(messageEvent) {
+            var request = messageEvent.message;
             //content script is asking for selector
-			console.log(request);
+			      console.log(request);
             var url = request.url;
             var currentEngine;
 
@@ -193,24 +177,21 @@
                         }
 
                         currentURL = currentEngine.url;
-						console.log("english terms");
-						console.log(jsonData.terms[currentEngine.terms].eng);
+            						console.log("english terms");
+            						console.log(jsonData.terms[currentEngine.terms].eng);
 
-                        return {selectorSearchField: currentEngine.selectors.input, englishTerms: jsonData.terms[currentEngine.terms].eng}
+                        messageEvent.target.page.dispatchMessage('message', {'selectorSearchField': currentEngine.selectors.input, 'englishTerms': jsonData.terms[currentEngine.terms].eng});
                     }
                 }
 
                 if (doLog) {
                     console.log('If not valid site, Url:', url);
                 }
-               return {
-                    selectorSearchField: false
-                }
             }
         }
 
 
-        
+
 
         safari.application.addEventListener('message', function(MessageEvent) {
             console.log("received msg");
@@ -220,9 +201,15 @@
             console.log(MessageEvent.message.action);
             switch (MessageEvent.message.action) {
 
+                case 'resize':
+                    if(resizeNextContent === true){
+                        MessageEvent.target.page.dispatchMessage("message", {'resize': true, 'width': width, 'height': height});
+                        resizeNextContent = false;
+                    }
+                    break;
+
                 case 'getEngineInformation':
-					//MessageEvent.target.page.dispatchMessage("getEngineInformation", getEngineInformation(MessageEvent.message));
-					MessageEvent.target.page.dispatchMessage("getEngineInformation", getEngineInformation(MessageEvent.message));
+					          getEngineInformation(MessageEvent);
                     break;
 
                 case 'searchForTerm':
@@ -233,6 +220,15 @@
                         console.log('received term: ', MessageEvent.message.term);
                         console.log('currentTerms: ', currentTerms);
                         console.log('Using term: ', MessageEvent.message.term.toLowerCase());
+                    }
+
+                    if(eventTargetPageWinLeft === false){
+                        eventTargetPageWinLeft = MessageEvent.target.page;
+                    }
+
+                    else if(MessageEvent.target.page !== eventTargetPageWinLeft){
+                        console.log('search was made from right window');
+                        eventTargetPageWinRight = MessageEvent.target.page;
                     }
 
                     MessageEvent.message.term = MessageEvent.message.term.toLowerCase();
@@ -255,20 +251,18 @@
 
                                 termStatus = 'term was found';
 
-                                showWindows(MessageEvent.message, currentTerms[i][Object.keys(currentTerms[i])[lowercaseTerms.indexOf(MessageEvent.message.term)]], MessageEvent.target.browserWindow);
+                                showWindows(MessageEvent.message, currentTerms[i][Object.keys(currentTerms[i])[lowercaseTerms.indexOf(MessageEvent.message.term)]], MessageEvent.message.windowWidth, MessageEvent.message.windowHeight, MessageEvent.target.page);
 
                                 break;
                             }
                         }
-//ToDo ändra här till return
-                        return {status: termStatus}
                     }
                     break;
 
                 case 'updateTabURL':
                     queryOptions.active = true;
 
-                    if (alternateWindow !== false) {
+                    if (windowRight !== false) {
                         queryOptions.windowId = originWindow.id
                     } else {
                         queryOptions.currentWindow = true;

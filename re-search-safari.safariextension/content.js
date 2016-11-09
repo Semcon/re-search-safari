@@ -6,25 +6,34 @@
 	var inputSelector;
 	var titleTerm = false;
 	var englishTerms;
+	var windowName = false;
 
 	//Safari bug fix
 	//window.onunload = function(){};
-	function sendText(text) {
-		if (runState === 'enabled' && typeof text !== 'undefined') {
-			console.log('Sending', text);
 
-			safari.self.tab.dispatchMessage("searchForTerm", {
-				action: "searchForTerm",
-				term: text
-			});
-			
-			safari.self.addEventListener("message", function(response) {
-				if (response) {
-					console.log(response.status);
-				}
-			}, false);
-		}
+	function sendText(text) {
+			if (runState === 'enabled' && typeof text !== 'undefined') {
+					console.log('Sending', text);
+					console.log(window);
+					safari.self.tab.dispatchMessage("searchForTerm", {
+						action: "searchForTerm",
+						term: text,
+						windowWidth: window.outerWidth,
+						windowHeight: window.outerHeight
+					});
+			}
 	}
+
+	function resizeWindowLeft(width, height){
+		console.log('in resizeWindow LEFT');
+		window.resizeTo(width/2, height);
+	}
+
+	function resizeWindowRight(width, height){
+		console.log('in resizeWindow RIGHT');
+		window.resizeTo(width/2, height);
+	}
+
 
 	function getTitle() {
 		// http://perfectionkills.com/the-poor-misunderstood-innerText/
@@ -35,7 +44,6 @@
 			console.log('got new term from title');
 			event = new Event('term');
 			window.dispatchEvent(event);
-
 			titleTerm = currentTitle;
 		}
 	}
@@ -157,40 +165,90 @@
 		}
 	}
 
+
+	safari.self.addEventListener('message', function(response) {
+
+		console.log(response);
+
+		if (response.message.hasOwnProperty("selectorSearchField")) {
+			console.log("Selectorsearchfield is here: ");
+			if (response.message.selectorSearchField !== false) {
+				console.log("inside selectorsearchfield if case");
+				console.log(response.message.selectorSearchField);
+				inputSelector = response.message.selectorSearchField;
+
+				if (runSetUI !== false) {
+					console.log("runSetUI method donepre");
+					englishTerms = response.message.englishTerms;
+					setUI();
+					runSetUI = false;
+					console.log("runSetUI method donepost");
+				}
+
+				titleTerm = document.getElementsByTagName('title')[0].innerText;
+				addListeners();
+				getSearchTerm();
+				console.log("get searchterm done");
+			} else {
+				console.log('Selector not found');
+			}
+		}
+
+		else if(response.message.hasOwnProperty("runState")) {
+				console.log(response);
+				runState = response.message.runState;
+				console.log("runstate is: ", runState);
+			  console.log("runinit",runInit);
+				if (runState === 'enabled' && runInit === true) {
+						init();
+						runInit = false;
+						console.log("runInit is set to false")
+				}
+
+				else if (runState === 'disabled') {
+						console.log('runState DISABLED');
+				}
+		}
+
+		else if(response.message.hasOwnProperty('resizeWindowLeft')) {
+			console.log('received resize window left');
+			console.log('response from background: ', response.message.resizeWindowLeft);
+			windowName = response.message.windowName;
+			resizeWindowLeft(response.message.width, response.message.height);
+		}
+
+		else if(response.message.hasOwnProperty('resizeWindowRight')){
+			console.log('received resize window right');
+			console.log('response from background: ', response.message.resizeWindowRight);
+			resizeWindowRight(response.message.width, response.message.height);
+		}
+
+		else if(response.message.hasOwnProperty('resize')){
+			console.log('Should resize window');
+			resizeWindowRight(response.message.width, response.message.height);
+		}
+
+		else if(response.message.hasOwnProperty('updateWindowURL')){
+			window.location.href = response.message.url;
+		}
+
+	}, false);
+
+
+
+
 	function init() {
 		console.log('In init');
-		safari.self.addEventListener('message', function(response) {
-			
-			console.log(response);
-			if (response.message.hasOwnProperty("selectorSearchField")) {
-				console.log("Selectorsearchfield is here: ");
-				if (response.message.selectorSearchField !== false) {
-					console.log("inside selectorsearchfield if case");
-					console.log(response.message.selectorSearchField);
-					inputSelector = response.message.selectorSearchField;
-
-					if (runSetUI !== false) {
-						console.log("runSetUI method donepre");
-						englishTerms = response.message.englishTerms;
-						setUI();
-						runSetUI = false;
-						console.log("runSetUI method donepost");
-					}
-
-					titleTerm = document.getElementsByTagName('title')[0].innerText;
-					addListeners();
-					getSearchTerm();
-					console.log("get searchterm done");
-				} else {
-					console.log('Selector not found');
-				}
-			}
-		}, false);
 
 		safari.self.tab.dispatchMessage("getEngineInformation", {
 			action: 'getEngineInformation',
 			url: window.location.href
 		});
+
+		safari.self.tab.dispatchMessage("resize", {
+			action: 'resize'
+		});
+
 	}
 
 
@@ -200,27 +258,14 @@
 			setTimeout(runWhenReady, 100);
 			return false;
 		}
+
+
 		console.log("document is complete");
+
+
 		safari.self.tab.dispatchMessage("getRunState", {
 			action: 'getRunState'
 		});
-		safari.self.addEventListener('message', function(response) {
-			if (response.message.hasOwnProperty("runState")) {
-				console.log(response);
-				runState = response.message.runState;
-				console.log("runstate is: ", runState);
-                console.log("runinit",runInit);
-				if (runState === 'enabled' && runInit === true) {
-					init();
-					runInit = false;
-					console.log("runInit is set to false")
-				} else if (runState === 'disabled') {
-					console.log('runState DISABLED');
-				}
-			}
-		}, false);
-
-
 	}
 
 
