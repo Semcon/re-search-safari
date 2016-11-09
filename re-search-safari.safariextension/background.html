@@ -28,8 +28,8 @@
         var width;
         var updateWindowRight = false;
         var urlWindowRight = false;
-        var eventTargetPageWinLeft = false;
-        var eventTargetPageWinRight = false;
+        var eventTargetWinLeft = false;
+        var eventTargetWinRight = false;
 
         //First time running script to check what value runState is in chrome storage.
         //If runState is undefined it is gets set to enabled otherwise it gets the value.
@@ -97,7 +97,6 @@
         				console.log(windowHeight);
             }
 
-            console.log('TESTING HERE, eventTargetPageWinLeft: ', eventTargetPageWinLeft);
             width = windowWidth;
             height = windowHeight;
 
@@ -115,7 +114,7 @@
           					windowRight = safari.application.openBrowserWindow();
           					var activeTab = windowRight.tabs[0];
           					activeTab.url = link;
-          					eventTargetPageWinLeft.dispatchMessage("message",{resizeWindowLeft: true, width: windowWidth, height: windowHeight, windowName: 'windowLeft'});
+          					eventTargetWinLeft.page.dispatchMessage("message",{resizeWindowLeft: true, width: windowWidth, height: windowHeight, windowName: 'windowLeft'});
 
                 }
                 else {
@@ -127,11 +126,17 @@
                     urlWindowRight = link;
 
                     //If the search was made from window to the right
-                    if (searchOriginWindow === eventTargetPageWinRight) {
-                        eventTargetPageWinLeft.dispatchMessage('message', {updateWindowURL: true, url: originLink});
+                    //Update left window with correct URL
+                    if (searchOriginWindow.page === eventTargetWinRight.page) {
+                        eventTargetWinLeft.url = originLink;
+                        eventTargetWinLeft.activate();
+                      //  eventTargetWinLeft.page.dispatchMessage('message', {updateWindowURL: true, url: originLink});
                     }
 
-                    eventTargetPageWinRight.dispatchMessage('message', {updateWindowURL: true, url: link});
+                    //Update right window with the correct URL
+                    eventTargetWinRight.url = link;
+                    eventTargetWinRight.activate();
+                //    eventTargetWinRight.page.dispatchMessage('message', {updateWindowURL: true, url: link});
 
                 }
             } else {
@@ -222,13 +227,13 @@
                         console.log('Using term: ', MessageEvent.message.term.toLowerCase());
                     }
 
-                    if(eventTargetPageWinLeft === false){
-                        eventTargetPageWinLeft = MessageEvent.target.page;
+                    if(eventTargetWinLeft === false){
+                        eventTargetWinLeft = MessageEvent.target;
                     }
 
-                    else if(MessageEvent.target.page !== eventTargetPageWinLeft){
+                    else if(MessageEvent.target !== eventTargetWinLeft){
                         console.log('search was made from right window');
-                        eventTargetPageWinRight = MessageEvent.target.page;
+                        eventTargetWinRight = MessageEvent.target;
                     }
 
                     MessageEvent.message.term = MessageEvent.message.term.toLowerCase();
@@ -251,7 +256,7 @@
 
                                 termStatus = 'term was found';
 
-                                showWindows(MessageEvent.message, currentTerms[i][Object.keys(currentTerms[i])[lowercaseTerms.indexOf(MessageEvent.message.term)]], MessageEvent.message.windowWidth, MessageEvent.message.windowHeight, MessageEvent.target.page);
+                                showWindows(MessageEvent.message, currentTerms[i][Object.keys(currentTerms[i])[lowercaseTerms.indexOf(MessageEvent.message.term)]], MessageEvent.message.windowWidth, MessageEvent.message.windowHeight, MessageEvent.target);
 
                                 break;
                             }
