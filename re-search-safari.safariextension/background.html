@@ -17,7 +17,7 @@
         var currentTerms;
         var currentURL;
         var jsonData;
-        var doLog = true;
+        var doLog = false;
         var windowRight = false;
         var windowLeft = false;
 
@@ -26,8 +26,17 @@
         var resizeNextContent = false;
         var height;
         var width;
-        var eventTargetWinLeft = false;
-        var eventTargetWinRight = false;
+        var tabLeft = false;
+        var tabRight = false;
+
+        //Eventlisteners
+        var eventListenerWindowLeft = false;
+        var eventListenerWindowRight = false;
+        var eventListenerTabLeft = false;
+        var eventListenerTabRight = false;
+
+
+
 
         //First time running script to check what value runState is in chrome storage.
         //If runState is undefined it is gets set to enabled otherwise it gets the value.
@@ -47,27 +56,48 @@
             }
         }
 
+        function addListener( object,  ){
 
-       function closeHandlerTabWindowLeft() {
-            console.log('LEFT TAB WAS CLOSED');
-
-            eventTargetWinLeft = false;
         }
 
-        function closeHandlerTabWindowRight(){
-            console.log('RIGHT TAB WAS CLOSED');
 
-            eventTargetWinRight = false;
+       function closeHandlerTabLeft() {
+            console.log('LEFT TAB WAS CLOSED');
+            tabLeft.removeEventListener('close', closeHandlerTabLeft, true);
+            eventListenerTabLeft = false;
+            console.log('REMOVED LISTENER TAB LEFT');
+            tabLeft = false;
+        }
+
+        function closeHandlerTabRight(){
+            console.log('RIGHT TAB WAS CLOSED');
+            tabRight.removeEventListener('close', closeHandlerTabRight, true);
+            eventListenerTabRight = false;
+            console.log('REMOVED LISTENER TAB RIGHT');
+            tabRight = false;
         }
 
         function closeHandlerWindowLeft(){
             console.log('LEFT WINDOW WAS CLOSED');
+            windowLeft.removeEventListener('close', closeHandlerWindowLeft, true);
+            eventListenerWindowLeft = false;
+            console.log('REMOVED LISTENER WINDOW LEFT');
+
             console.log('WINDOW RIGHT IS: ' , windowRight);
             if(windowRight !== false){
               console.log('windowRight is not false, sending resizeWindow');
                 windowRight.tabs[0].page.dispatchMessage('message', {resizeWindow: true, width: width, height: height});
                 windowRight.activate();
+                windowRight.removeEventListener('close', closeHandlerWindowRight, true);
+                console.log('REMOVED LISTENER WINDOW RIGHT');
+                eventListenerWindowRight = false;
                 windowRight = false;
+                if(eventListenerTabRight === true){
+                    tabRight.removeEventListener('close', closeHandlerTabRight, true);
+                    console.log('REMOVED LISTENER TAB RIGHT');
+                    eventListenerTabRight = false;
+                    tabRight = false;
+                }
             }
         }
 
@@ -75,9 +105,18 @@
             console.log('RIGHT WINDOW WAS CLOSED');
 
             if(windowLeft !== false){
+                console.log('sending resize to window left')
+                console.log('windowleft: ', windowLeft);
                 windowLeft.tabs[0].page.dispatchMessage('message', {resizeWindow: true, width: width, height: height});
                 windowLeft.activate();
+                windowRight.removeEventListener('close', closeHandlerWindowRight, true);
+                console.log('REMOVED LISTENER WINDOW RIGHT');
+                eventListenerWindowRight = false;
                 windowRight = false;
+            }
+            else{
+                console.log('window left is false, resize failed');
+
             }
         }
 
@@ -109,18 +148,20 @@
                 if (doLog) {
                     console.log('Link: ', link);
                 }
-				        console.log("windowRight",windowRight);
 
                 if (windowRight === false) {
                     resizeNextContent = true;
           					windowRight = safari.application.openBrowserWindow();
 
-                    console.log('!!!!WINDOW RIGHT!!!!!: ', windowRight);
-
-                    windowRight.addEventListener('close', closeHandlerWindowRight, true);
+                    if(eventListenerWindowRight === false){
+                        windowRight.addEventListener('close', closeHandlerWindowRight, true);
+                        console.log('ADDED LISTENER TO WINDOW RIGHT');
+                        eventListenerWindowRight = true;
+                    }
           					var activeTab = windowRight.tabs[0];
           					activeTab.url = link;
-          					eventTargetWinLeft.page.dispatchMessage("message",{resizeWindow: true, width: width/2, height: height});
+          					tabLeft.page.dispatchMessage("message",{resizeWindow: true, width: width/2, height: height});
+                    console.log('SENT MESSAGE TO TAB LEFT TO RESIZE');
                 }
                 else {
                     if (doLog) {
@@ -130,18 +171,39 @@
 
                     //Add checks for if tabs exist and create if they don't
 
-
-
                     //If the search was made from window to the right
                     //Update left window with correct URL
-                    if (searchOriginWindow.page === eventTargetWinRight.page) {
-                        eventTargetWinLeft.url = originLink;
-                        eventTargetWinLeft.activate();
+
+                    if (searchOriginWindow.page === tabRight.page) {
+                        if(tabLeft !== false){
+                            tabLeft.url = originLink;
+                            tabLeft.activate();
+                        }
+                        else {
+                            tabLeft = windowLeft.openTab();
+                            if(eventListenerTabLeft === false){
+                                tabLeft.addEventListener('close', closeHandlerTabLeft, true);
+                                console.log('ADDED LISTENER TAB LEFT');
+                                eventListenerTabLeft = true;
+                            }
+                            tabLeft.url = originLink;
+                        }
                     }
 
-                    //Update right window with the correct URL
-                    eventTargetWinRight.url = link;
-                    eventTargetWinRight.activate();
+                    if(tabRight === false){
+                        tabRight = windowRight.openTab();
+                        if(eventListenerTabRight === false){
+                            tabRight.addEventListener('close', closeHandlerTabRight, true);
+                            eventListenerTabRight = true;
+                            console.log('ADDED LISTENER TAB RIGHT');
+                        }
+                        tabRight.url = link;
+                        tabRight.activate();
+                    }
+                    else{
+                        tabRight.url = link;
+                        tabRight.activate();
+                    }
                 }
             }
             else {
@@ -187,8 +249,8 @@
                         }
 
                         currentURL = currentEngine.url;
-            						console.log("english terms");
-            						console.log(jsonData.terms[currentEngine.terms].eng);
+            						// console.log("english terms");
+            						// console.log(jsonData.terms[currentEngine.terms].eng);
 
                         messageEvent.target.page.dispatchMessage('message', {'selectorSearchField': currentEngine.selectors.input, 'englishTerms': jsonData.terms[currentEngine.terms].eng});
                     }
@@ -232,18 +294,31 @@
                         console.log('Using term: ', MessageEvent.message.term.toLowerCase());
                     }
 
-                    if(eventTargetWinLeft === false){
-                        console.log('SETTING WINDOW LEFT TO eventTargetWinLeft.browserWindow');
-                        eventTargetWinLeft = MessageEvent.target;
-                        eventTargetWinLeft.addEventListener('close', closeHandlerTabWindowLeft, true);
-                        windowLeft = eventTargetWinLeft.browserWindow;
-                        windowLeft.addEventListener('close', closeHandlerWindowLeft, true);
+
+                    if(tabLeft === false){
+                        console.log('SETTING WINDOW LEFT TO tabLeft.browserWindow');
+                        tabLeft = MessageEvent.target;
+                        if(eventListenerTabLeft === false){
+                            tabLeft.addEventListener('close', closeHandlerTabLeft, true);
+                            eventListenerTabLeft = true;
+                            console.log('ADDED LISTENER TAB LEFT');
+                        }
+                        windowLeft = tabLeft.browserWindow;
+                        if(eventListenerWindowLeft === false){
+                            windowLeft.addEventListener('close', closeHandlerWindowLeft, true);
+                            eventListenerWindowLeft = true;
+                            console.log('ADDED LISTENER WINDOW LEFT');
+                        }
                     }
 
-                    else if(MessageEvent.target !== eventTargetWinLeft){
+                    else if(MessageEvent.target !== tabLeft){
                         console.log('search was made from right window');
-                        eventTargetWinRight = MessageEvent.target;
-                        eventTargetWinRight.addEventListener('close', closeHandlerTabWindowRight, true);
+                        tabRight = MessageEvent.target;
+                        if(eventListenerTabRight === false){
+                            tabRight.addEventListener('close', closeHandlerTabRight, true);
+                            eventListenerTabRight = true;
+                            console.log('ADDED LISTENER TAB RIGHT');
+                        }
                     }
 
                     MessageEvent.message.term = MessageEvent.message.term.toLowerCase();
@@ -254,7 +329,7 @@
                         }
 
                         for (var i = 0; i < currentTerms.length; i++) {
-                            console.log(currentTerms[i]);
+                            // console.log(currentTerms[i]);
                             lowercaseTerms = Object.keys(currentTerms[i]).map(function(string) {
                                 return string.toLowerCase();
                             });
@@ -265,6 +340,7 @@
                                 }
 
                                 termStatus = 'term was found';
+                                console.log('3, WINDOW RIGHT IS: ', windowRight);
 
                                 showWindows(MessageEvent.message, currentTerms[i][Object.keys(currentTerms[i])[lowercaseTerms.indexOf(MessageEvent.message.term)]], MessageEvent.message.windowWidth, MessageEvent.message.windowHeight, MessageEvent.target);
 
