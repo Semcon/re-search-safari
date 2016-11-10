@@ -1,5 +1,5 @@
 (function() {
-	var runState;
+	// var runState;
 	var runInit = true;
 	var elements;
 	var runSetUI = true;
@@ -12,14 +12,14 @@
 	//window.onunload = function(){};
 
 	function sendText(text) {
-			if (runState === 'enabled' && typeof text !== 'undefined') {
+			if (typeof text !== 'undefined') {
 					console.log('Sending', text);
 					console.log(window);
 					safari.self.tab.dispatchMessage("searchForTerm", {
-						action: "searchForTerm",
-						term: text,
-						windowWidth: window.outerWidth,
-						windowHeight: window.outerHeight
+							action: "searchForTerm",
+							term: text,
+							windowWidth: window.outerWidth,
+							windowHeight: window.outerHeight
 					});
 			}
 	}
@@ -189,25 +189,25 @@
 			}
 		}
 
-		else if(response.message.hasOwnProperty("runState")) {
-				console.log(response);
-				runState = response.message.runState;
-				console.log("runstate is: ", runState);
-			  console.log("runinit",runInit);
-				if (runState === 'enabled' && runInit === true) {
-						init();
-						runInit = false;
-						console.log("runInit is set to false")
-				}
-
-				else if (runState === 'disabled') {
-						console.log('runState DISABLED');
-				}
-		}
+		// else if(response.message.hasOwnProperty("runState")) {
+		// 		console.log(response);
+		// 		runState = response.message.runState;
+		// 		console.log("runstate is: ", runState);
+		// 	  console.log("runinit",runInit);
+		// 		if (runState === 'enabled' && runInit === true) {
+		// 				init();
+		// 				runInit = false;
+		// 				console.log("runInit is set to false")
+		// 		}
+		//
+		// 		else if (runState === 'disabled') {
+		// 				console.log('runState DISABLED');
+		// 		}
+		// }
 
 		else if(response.message.hasOwnProperty('resizeWindow')){
-			console.log('Should resize window');
-			resizeWindow(response.message.width, response.message.height);
+				console.log('Should resize window');
+				resizeWindow(response.message.width, response.message.height);
 		}
 	}, false);
 
@@ -215,72 +215,38 @@
 
 
 	function init() {
-		console.log('In init');
+			console.log('In init');
 
-		safari.self.tab.dispatchMessage("getEngineInformation", {
-			action: 'getEngineInformation',
-			url: window.location.href
-		});
+			safari.self.tab.dispatchMessage("getEngineInformation", {
+				action: 'getEngineInformation',
+				url: window.location.href
+			});
 
-		safari.self.tab.dispatchMessage("resize", {
-			action: 'resize'
-		});
-
+			safari.self.tab.dispatchMessage("resize", {
+				action: 'resize'
+			});
 	}
-
-
 
 	function runWhenReady() {
 		if (document.readyState !== 'complete') {
-			setTimeout(runWhenReady, 100);
-			return false;
+				setTimeout(runWhenReady, 100);
+				return false;
 		}
-
 
 		console.log("document is complete");
 
-
-		safari.self.tab.dispatchMessage("getRunState", {
-			action: 'getRunState'
-		});
+		if(runInit === true){
+				init();
+				runInit = false;
+		}
+		// safari.self.tab.dispatchMessage("getRunState", {
+		// 	action: 'getRunState'
+		// });
 	}
 
 
 	//first time content script runs
 	runWhenReady();
-
-	//Run state sent from background when user turns extension on/off
-	window.addEventListener('message', function(request, sender, sendResponse) {
-		console.log("this is request");
-		console.log(request.action);
-		//ToDo ändra till switch
-		if (request.action === 'changeRunState') {
-			if (request.runState === 'disabled') {
-				runState = request.runState;
-
-				sendResponse({
-					message: 'received disabled'
-				});
-			} else if (request.runState === 'enabled') {
-				runState = request.runState;
-				if (document.readyState === 'complete') {
-					console.log('document is complete');
-					if (runInit === true) {
-						init();
-						runInit = false;
-					}
-				}
-				sendResponse({
-					message: 'received enabled'
-				});
-			}
-		} else {
-			console.log('Message from event page was not handled');
-		}
-
-		return true;
-	}, true);
-
 
 
 })();

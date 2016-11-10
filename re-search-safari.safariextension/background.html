@@ -29,7 +29,7 @@
         var tabLeft = false;
         var tabRight = false;
 
-        //Eventlisteners
+        //Eventlistener variables
         var eventListenerWindowLeft = false;
         var eventListenerWindowRight = false;
         var eventListenerTabLeft = false;
@@ -56,10 +56,17 @@
             }
         }
 
-        function addListener( object,  ){
-
+        var xhr = new XMLHttpRequest();
+        xhr.open('GET', DATA_URL, true);
+        xhr.onreadystatechange = function() {
+            if (xhr.readyState === 4 && xhr.status === 200) {
+                jsonData = JSON.parse(xhr.responseText);
+            }
         }
+        xhr.send();
 
+
+        //Close handlers for windows and tabs
 
        function closeHandlerTabLeft() {
             console.log('LEFT TAB WAS CLOSED');
@@ -121,14 +128,7 @@
         }
 
 
-        var xhr = new XMLHttpRequest();
-        xhr.open('GET', DATA_URL, true);
-        xhr.onreadystatechange = function() {
-            if (xhr.readyState === 4 && xhr.status === 200) {
-                jsonData = JSON.parse(xhr.responseText);
-            }
-        }
-        xhr.send();
+        //Function for opening windows and tabs
 
         function showWindows(request, newTerm, windowWidth, windowHeight, searchOriginWindow) {
 			      console.log("inne i showwindows");
@@ -213,6 +213,10 @@
             }
         }
 
+        //Content script calls this function to get information about the search engine.
+        //If the website matches any of the required, the terms will be declared and the
+        // search field selector will be sent back to the content script
+
         function getEngineInformation(messageEvent) {
             var request = messageEvent.message;
             //content script is asking for selector
@@ -263,7 +267,7 @@
         }
 
 
-
+        //Message handler for all incoming messages
 
         safari.application.addEventListener('message', function(MessageEvent) {
             console.log("received msg");
@@ -288,63 +292,65 @@
                     var termStatus = 'term not found';
                     var lowercaseTerms;
 
-                    if (doLog) {
-                        console.log('received term: ', MessageEvent.message.term);
-                        console.log('currentTerms: ', currentTerms);
-                        console.log('Using term: ', MessageEvent.message.term.toLowerCase());
-                    }
-
-
-                    if(tabLeft === false){
-                        console.log('SETTING WINDOW LEFT TO tabLeft.browserWindow');
-                        tabLeft = MessageEvent.target;
-                        if(eventListenerTabLeft === false){
-                            tabLeft.addEventListener('close', closeHandlerTabLeft, true);
-                            eventListenerTabLeft = true;
-                            console.log('ADDED LISTENER TAB LEFT');
-                        }
-                        windowLeft = tabLeft.browserWindow;
-                        if(eventListenerWindowLeft === false){
-                            windowLeft.addEventListener('close', closeHandlerWindowLeft, true);
-                            eventListenerWindowLeft = true;
-                            console.log('ADDED LISTENER WINDOW LEFT');
-                        }
-                    }
-
-                    else if(MessageEvent.target !== tabLeft){
-                        console.log('search was made from right window');
-                        tabRight = MessageEvent.target;
-                        if(eventListenerTabRight === false){
-                            tabRight.addEventListener('close', closeHandlerTabRight, true);
-                            eventListenerTabRight = true;
-                            console.log('ADDED LISTENER TAB RIGHT');
-                        }
-                    }
-
-                    MessageEvent.message.term = MessageEvent.message.term.toLowerCase();
-
-                    if (currentTerms !== 'undefined') {
+                    if(currentState === 'enabled'){
                         if (doLog) {
-                            console.log('currentTerms is defined');
+                            console.log('received term: ', MessageEvent.message.term);
+                            console.log('currentTerms: ', currentTerms);
+                            console.log('Using term: ', MessageEvent.message.term.toLowerCase());
                         }
 
-                        for (var i = 0; i < currentTerms.length; i++) {
-                            // console.log(currentTerms[i]);
-                            lowercaseTerms = Object.keys(currentTerms[i]).map(function(string) {
-                                return string.toLowerCase();
-                            });
 
-                            if (lowercaseTerms.indexOf(MessageEvent.message.term) > -1) {
-                                if (doLog) {
-                                    console.log('term is found', MessageEvent.message);
+                        if(tabLeft === false){
+                            console.log('SETTING WINDOW LEFT TO tabLeft.browserWindow');
+                            tabLeft = MessageEvent.target;
+                            if(eventListenerTabLeft === false){
+                                tabLeft.addEventListener('close', closeHandlerTabLeft, true);
+                                eventListenerTabLeft = true;
+                                console.log('ADDED LISTENER TAB LEFT');
+                            }
+                            windowLeft = tabLeft.browserWindow;
+                            if(eventListenerWindowLeft === false){
+                                windowLeft.addEventListener('close', closeHandlerWindowLeft, true);
+                                eventListenerWindowLeft = true;
+                                console.log('ADDED LISTENER WINDOW LEFT');
+                            }
+                        }
+
+                        else if(MessageEvent.target !== tabLeft){
+                            console.log('search was made from right window');
+                            tabRight = MessageEvent.target;
+                            if(eventListenerTabRight === false){
+                                tabRight.addEventListener('close', closeHandlerTabRight, true);
+                                eventListenerTabRight = true;
+                                console.log('ADDED LISTENER TAB RIGHT');
+                            }
+                        }
+
+                        MessageEvent.message.term = MessageEvent.message.term.toLowerCase();
+
+                        if (currentTerms !== 'undefined') {
+                            if (doLog) {
+                                console.log('currentTerms is defined');
+                            }
+
+                            for (var i = 0; i < currentTerms.length; i++) {
+                                // console.log(currentTerms[i]);
+                                lowercaseTerms = Object.keys(currentTerms[i]).map(function(string) {
+                                    return string.toLowerCase();
+                                });
+
+                                if (lowercaseTerms.indexOf(MessageEvent.message.term) > -1) {
+                                    if (doLog) {
+                                        console.log('term is found', MessageEvent.message);
+                                    }
+
+                                    termStatus = 'term was found';
+                                    console.log('3, WINDOW RIGHT IS: ', windowRight);
+
+                                    showWindows(MessageEvent.message, currentTerms[i][Object.keys(currentTerms[i])[lowercaseTerms.indexOf(MessageEvent.message.term)]], MessageEvent.message.windowWidth, MessageEvent.message.windowHeight, MessageEvent.target);
+
+                                    break;
                                 }
-
-                                termStatus = 'term was found';
-                                console.log('3, WINDOW RIGHT IS: ', windowRight);
-
-                                showWindows(MessageEvent.message, currentTerms[i][Object.keys(currentTerms[i])[lowercaseTerms.indexOf(MessageEvent.message.term)]], MessageEvent.message.windowWidth, MessageEvent.message.windowHeight, MessageEvent.target);
-
-                                break;
                             }
                         }
                     }
@@ -369,61 +375,35 @@
                     }
                     break;
 
-                case 'getRunState':
-//                    safari.self.tabs[0].page.dispatchMessage("onGetRunState", {runState: currentState});
-                    MessageEvent.target.page.dispatchMessage("message",{runState: currentState});
-					console.log(currentState);
-                    break;
-
-                case 'changeRunState':
-                    if (doLog) {
-                        console.log('ChangeRunState from popup / current value is: ', currentState);
-                    }
-
-                    if (currentState === 'enabled') {
-                        currentState = 'disabled';
-                    } else {
-                        currentState = 'enabled';
-                    }
-
-                    localStorage.setItem('runState', {
-                            runState: currentState
-                        },
-                        function() {
-                            if (doLog) {
-                                console.log('Saved', 'runState', currentState);
-                            }
-
-                            chrome.tabs.query({
-                                active: true,
-                                currentWindow: true
-                            }, function(tabs) {
-                                safari.self.tabs[0].page.dispatchMessage("message", {
-                                    action: 'changeRunState',
-                                    runState: currentState
-                                }, function(response) {
-                                    if (response) {
-                                        if (doLog) {
-                                            console.log(response.message);
-                                        }
-                                    } else {
-                                        if (doLog) {
-                                            console.log('Content script not injected');
-                                        }
-                                    }
-                                });
-                            });
-
-                            sendResponse({
-                                runState: currentState
-                            });
-                        }
-                    );
-                    break;
+                // case 'getRunState':
+                //     MessageEvent.target.page.dispatchMessage('message', {'runState': currentState});
+					      //     console.log(currentState);
+                //     break;
+                //
+                // case 'changeRunState':
+                //     if (doLog) {
+                //         console.log('ChangeRunState from popup / current value is: ', currentState);
+                //     }
+                //
+                //     if (currentState === 'enabled') {
+                //         currentState = 'disabled';
+                //     }
+                //
+                //     else {
+                //         currentState = 'enabled';
+                //     }
+                //
+                //     localStorage.setItem('runState', currentState);
+                //
+                //     if (doLog) {
+                //         console.log('Saved', 'runState', currentState);
+                //     }
+                //
+                //     break;
 
                 default:
                     if (doLog) {
-                        console.log('Message to event page was not handled: ', request);
+                        console.log('Message to event page was not handled: ', MessageEvent.message);
                     }
             }
 
