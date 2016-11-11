@@ -17,15 +17,16 @@
         var currentTerms;
         var currentURL;
         var jsonData;
-        var doLog = false;
+        var doLog = true;
         var windowRight = false;
         var windowLeft = false;
 
         var DATA_URL = 'https://api.myjson.com/bins/1rq4a';
-        var temp;
         var resizeNextContent = false;
         var height;
         var width;
+        var wTop;
+        var left;
         var tabLeft = false;
         var tabRight = false;
 
@@ -40,8 +41,6 @@
 
         //First time running script to check what value runState is in chrome storage.
         //If runState is undefined it is gets set to enabled otherwise it gets the value.
-
-        localStorage.setItem('runState', temp);
 
         currentState = localStorage.getItem('runState');
         if (doLog) {
@@ -92,34 +91,49 @@
 
             console.log('WINDOW RIGHT IS: ' , windowRight);
             if(windowRight !== false){
-              console.log('windowRight is not false, sending resizeWindow');
-                windowRight.tabs[0].page.dispatchMessage('message', {resizeWindow: true, width: width, height: height});
-                windowRight.activate();
-                windowRight.removeEventListener('close', closeHandlerWindowRight, true);
-                console.log('REMOVED LISTENER WINDOW RIGHT');
-                eventListenerWindowRight = false;
-                windowRight = false;
-                if(eventListenerTabRight === true){
-                    tabRight.removeEventListener('close', closeHandlerTabRight, true);
-                    console.log('REMOVED LISTENER TAB RIGHT');
-                    eventListenerTabRight = false;
-                    tabRight = false;
+                if(typeof windowRight.tabs !== 'undefined'){
+                    console.log('windowRight is not false, sending resizeWindow');
+                    for(var i = 0; i < windowRight.tabs.length; i++){
+                        if(typeof windowRight.tabs[i].url !== 'undefined'){
+                            console.log('tab was found', windowRight.tabs[i]);
+                            windowRight.tabs[i].page.dispatchMessage('message', {resizeWindow: true, width: Math.max(width, 0), height: Math.max(height, 0), left: Math.max(left, 0), top: Math.max(wTop, 0)});
+                            windowRight.activate();
+                            windowRight.removeEventListener('close', closeHandlerWindowRight, true);
+                            console.log('REMOVED LISTENER WINDOW RIGHT');
+                            eventListenerWindowRight = false;
+                            windowRight = false;
+                            if(eventListenerTabRight === true){
+                                tabRight.removeEventListener('close', closeHandlerTabRight, true);
+                                console.log('REMOVED LISTENER TAB RIGHT');
+                                eventListenerTabRight = false;
+                                tabRight = false;
+                            }
+                            break;
+                        }
+                    }
                 }
             }
         }
 
         function closeHandlerWindowRight(){
             console.log('RIGHT WINDOW WAS CLOSED');
-
             if(windowLeft !== false){
-                console.log('sending resize to window left')
-                console.log('windowleft: ', windowLeft);
-                windowLeft.tabs[0].page.dispatchMessage('message', {resizeWindow: true, width: width, height: height});
-                windowLeft.activate();
-                windowRight.removeEventListener('close', closeHandlerWindowRight, true);
-                console.log('REMOVED LISTENER WINDOW RIGHT');
-                eventListenerWindowRight = false;
-                windowRight = false;
+                if(typeof windowLeft.tabs !== 'undefined'){
+                    console.log('sending resize to window left')
+                    for(var i = 0; i < windowLeft.tabs.length; i++){
+                        console.log('tab: ', windowLeft.tabs[i].url);
+                        if(typeof windowLeft.tabs[i].url !== 'undefined'){
+                            console.log('tab was found', windowLeft.tabs[i]);
+                            windowLeft.tabs[i].page.dispatchMessage('message', {resizeWindow: true, width: Math.max(width, 0), height: Math.max(height, 0), left: Math.max(left, 0), top: Math.max(wTop, 0)});
+                            windowLeft.activate();
+                            windowRight.removeEventListener('close', closeHandlerWindowRight, true);
+                            console.log('REMOVED LISTENER WINDOW RIGHT');
+                            eventListenerWindowRight = false;
+                            windowRight = false;
+                            break;
+                        }
+                    }
+                }
             }
             else{
                 console.log('window left is false, resize failed');
@@ -130,16 +144,19 @@
 
         //Function for opening windows and tabs
 
-        function showWindows(request, newTerm, windowWidth, windowHeight, searchOriginWindow) {
-			      console.log("inne i showwindows");
+        function showWindows(request, newTerm, windowWidth, windowHeight, windowScreenLeft, windowScreenTop, searchOriginWindow) {
             if (doLog) {
                 console.log(request.term);
         				console.log(windowWidth);
         				console.log(windowHeight);
+                console.log(windowScreenLeft);
+                console.log(windowScreenTop);
             }
 
             width = windowWidth;
             height = windowHeight;
+            left = windowScreenLeft;
+            wTop = windowScreenTop;
 
             if (currentURL !== 'undefined') {
                 var link = currentURL + newTerm;
@@ -160,19 +177,13 @@
                     }
           					var activeTab = windowRight.tabs[0];
           					activeTab.url = link;
-          					tabLeft.page.dispatchMessage("message",{resizeWindow: true, width: width/2, height: height});
+          					tabLeft.page.dispatchMessage("message",{resizeWindow: true, width: Math.max(width/2, 0), height: Math.max(height, 0), left: Math.max(left, 0), top: Math.max(wTop, 0)});
                     console.log('SENT MESSAGE TO TAB LEFT TO RESIZE');
                 }
                 else {
                     if (doLog) {
                         console.log('Should update alternate window');
                     }
-
-
-                    //Add checks for if tabs exist and create if they don't
-
-                    //If the search was made from window to the right
-                    //Update left window with correct URL
 
                     if (searchOriginWindow.page === tabRight.page) {
                         if(tabLeft !== false){
@@ -279,7 +290,7 @@
 
                 case 'resize':
                     if(resizeNextContent === true){
-                        MessageEvent.target.page.dispatchMessage("message", {'resizeWindow': true, 'width': width/2, 'height': height});
+                        MessageEvent.target.page.dispatchMessage("message", {resizeWindow: true, width: Math.max(width/2, 0), height: Math.max(height, 0), left: Math.max(left + (width/2), 0), top: Math.max(wTop, 0)});
                         resizeNextContent = false;
                     }
                     break;
@@ -347,7 +358,7 @@
                                     termStatus = 'term was found';
                                     console.log('3, WINDOW RIGHT IS: ', windowRight);
 
-                                    showWindows(MessageEvent.message, currentTerms[i][Object.keys(currentTerms[i])[lowercaseTerms.indexOf(MessageEvent.message.term)]], MessageEvent.message.windowWidth, MessageEvent.message.windowHeight, MessageEvent.target);
+                                    showWindows(MessageEvent.message, currentTerms[i][Object.keys(currentTerms[i])[lowercaseTerms.indexOf(MessageEvent.message.term)]], MessageEvent.message.windowWidth, MessageEvent.message.windowHeight, MessageEvent.message.windowScreenLeft, MessageEvent.message.windowScreenTop, MessageEvent.target);
 
                                     break;
                                 }
@@ -375,31 +386,6 @@
                     }
                     break;
 
-                // case 'getRunState':
-                //     MessageEvent.target.page.dispatchMessage('message', {'runState': currentState});
-					      //     console.log(currentState);
-                //     break;
-                //
-                // case 'changeRunState':
-                //     if (doLog) {
-                //         console.log('ChangeRunState from popup / current value is: ', currentState);
-                //     }
-                //
-                //     if (currentState === 'enabled') {
-                //         currentState = 'disabled';
-                //     }
-                //
-                //     else {
-                //         currentState = 'enabled';
-                //     }
-                //
-                //     localStorage.setItem('runState', currentState);
-                //
-                //     if (doLog) {
-                //         console.log('Saved', 'runState', currentState);
-                //     }
-                //
-                //     break;
 
                 default:
                     if (doLog) {
