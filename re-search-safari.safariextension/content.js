@@ -10,10 +10,11 @@
 	//Safari bug fix
 	//window.onunload = function(){};
 
+
 	function sendText(text) {
 			if (typeof text !== 'undefined') {
 					console.log('Sending', text);
-					console.log(window);
+					// console.log(window);
 					safari.self.tab.dispatchMessage("searchForTerm", {
 							action: "searchForTerm",
 							term: text,
@@ -28,6 +29,7 @@
 	function resizeWindow(width, height, left, top){
 			window.resizeTo(width, height);
 			window.moveTo(left, top);
+			console.log('has resized');
 	}
 
 	function getTitle() {
@@ -44,26 +46,25 @@
 	}
 
 	function addListeners() {
-		setInterval(getTitle, 64);
+			setInterval(getTitle, 64);
 
-		window.addEventListener('term', function() {
-			console.log('in eventlistener set ui');
-			setEngineUI();
-			getSearchTerm();
-		});
-
-		//Gets value from drop-down list
-		if (document.getElementById('termList') !== null) {
-			console.log('in get element from drop down');
-			document.getElementById('termList').addEventListener('change', function(event) {
-				var term = document.getElementById('termList').value;
-
-				window.postMessage({
-					action: "updateTabURL",
-					term: term
-				});
+			window.addEventListener('term', function() {
+				setEngineUI();
+				getSearchTerm();
 			});
-		}
+
+			//Gets value from drop-down list
+			if (document.getElementById('termList') !== null) {
+				console.log('in get element from drop down');
+				document.getElementById('termList').addEventListener('change', function(event) {
+					var term = document.getElementById('termList').value;
+
+					window.postMessage({
+						action: "updateTabURL",
+						term: term
+					});
+				});
+			}
 	}
 
 	//Gets search terms when different events occur.
@@ -72,7 +73,6 @@
 			elements = document.querySelectorAll(inputSelector);
 			if (elements.length === 0) {
 					setTimeout(getSearchTerm, 100);
-					console.log(inputSelector, '`s length was 0');
 					return false;
 			}
 
@@ -85,7 +85,6 @@
 
 	function getSelectList(termsData) {
 			//Create and append select list
-			console.log(termsData);
 			var terms = Object.keys(termsData);
 
 			var selectList = document.createElement("SELECT");
@@ -164,31 +163,32 @@
 
 	safari.self.addEventListener('message', function(response) {
 
-		console.log(response);
+			console.log(response);
 
-		if (response.message.hasOwnProperty("selectorSearchField")) {
-			if (response.message.selectorSearchField !== false) {
-				console.log(response.message.selectorSearchField);
-				inputSelector = response.message.selectorSearchField;
+			if (response.message.hasOwnProperty("selectorSearchField")) {
+					if (response.message.selectorSearchField !== false) {
+							console.log(response.message.selectorSearchField);
+							inputSelector = response.message.selectorSearchField;
 
-				if (runSetUI !== false) {
-					englishTerms = response.message.englishTerms;
-					setUI();
-					runSetUI = false;
-				}
+							if (runSetUI !== false) {
+									englishTerms = response.message.englishTerms;
+									setUI();
+									runSetUI = false;
+							}
 
-				titleTerm = document.getElementsByTagName('title')[0].innerText;
-				addListeners();
-				getSearchTerm();
-			} else {
-				console.log('Selector not found');
+							titleTerm = document.getElementsByTagName('title')[0].innerText;
+							addListeners();
+							getSearchTerm();
+					}
+					else {
+							console.log('Selector not found');
+					}
 			}
-		}
 
-		else if(response.message.hasOwnProperty('resizeWindow')){
-				console.log('Should resize window');
-				resizeWindow(response.message.width, response.message.height, response.message.left, response.message.top);
-		}
+			else if(response.message.hasOwnProperty('resizeWindow')){
+					console.log('Should resize window');
+					resizeWindow(response.message.width, response.message.height, response.message.left, response.message.top);
+			}
 	}, false);
 
 
@@ -198,27 +198,27 @@
 			console.log('In init');
 
 			safari.self.tab.dispatchMessage("getEngineInformation", {
-				action: 'getEngineInformation',
-				url: window.location.href
+					action: 'getEngineInformation',
+					url: window.location.href
 			});
 
 			safari.self.tab.dispatchMessage("resize", {
-				action: 'resize'
+					action: 'resize'	
 			});
 	}
 
 	function runWhenReady() {
-		if (document.readyState !== 'complete') {
-				setTimeout(runWhenReady, 100);
-				return false;
-		}
+			if (document.readyState !== 'complete') {
+					setTimeout(runWhenReady, 100);
+					return false;
+			}
 
-		console.log("document is complete");
+			console.log("document is complete");
 
-		if(runInit === true){
-				init();
-				runInit = false;
-		}
+			if(runInit === true){
+					init();
+					runInit = false;
+			}
 	}
 
 
