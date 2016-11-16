@@ -9,7 +9,7 @@
 	<key>CFBundleDisplayName</key>
 	<string>re-search-safari</string>
 	<key>CFBundleIdentifier</key>
-	<string>com.yourcompany.re-search-safari</string>
+	<string>com.semcon.re-search-safari</string>
 	<key>CFBundleInfoDictionaryVersion</key>
 	<string>6.0</string>
 	<key>CFBundleShortVersionString</key>
