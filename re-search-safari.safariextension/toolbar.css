@@ -69,6 +69,7 @@
 .re-search-select {
     background: none;
     border: 1px solid #73D791;
+    border-radius: 0;
     font-weight: 700;
     height: 39px;
     margin-left: 67px;

@@ -1,4 +1,7 @@
 (function(){
     console.log('HELLO');
-    safari.extension.globalPage.contentWindow.enableToolbar();
+    window.addEventListener( 'focus' , function(){
+        console.log('inside listener');
+        safari.extension.globalPage.contentWindow.enableToolbar();
+    });
 })();

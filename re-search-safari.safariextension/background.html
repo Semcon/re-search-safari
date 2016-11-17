@@ -11,27 +11,29 @@
     <script>
 
 
-    var doLog = true;
+    var doLog = false;
 
     var currentTerms;
     var currentURL;
     var jsonData;
-    var windowRight = false;
-    var windowLeft = false;
 
     var DATA_URL = 'https://api.myjson.com/bins/1rq4a';
     var TIP_URL = 'http://example.com';
 
     var resizeNextContent = false;
+
+    var windowRight = false;
+    var windowLeft = false;
+
     var height;
     var width;
-    var initialWidth = false;
     var wTop;
     var left;
+    var initialWidth = false;
+
     var tabLeft = false;
     var tabRight = false;
 
-    //Eventlistener variables
     var eventListenerWindowLeft = false;
     var eventListenerWindowRight = false;
     var eventListenerTabLeft = false;
@@ -39,7 +41,6 @@
 
     var showPopups = true;
     var showBar = true;
-    var latestTerm = false;
 
 
     //First time running script to check what value runState is in chrome storage.
@@ -92,7 +93,7 @@
                         windowRight.removeEventListener('close', closeHandlerWindowRight, false);
                         eventListenerWindowRight = false;
                         windowRight = false;
-                        if(eventListenerTabRight){
+                        if(tabRight !== false){
                             tabRight.removeEventListener('close', closeHandlerTabRight, false);
                             eventListenerTabRight = false;
                             tabRight = false;
@@ -112,7 +113,6 @@
             if(typeof windowLeft.tabs !== 'undefined'){
                 for(var i = 0; i < windowLeft.tabs.length; i++){
                     if(typeof windowLeft.tabs[i].url !== 'undefined'){
-                        console.log('INITIAL WIDTH: ', initialWidth);
                         windowLeft.tabs[i].page.dispatchMessage('message', {
                             resizeWindow: true,
                             width: initialWidth,
@@ -145,7 +145,7 @@
     xhr.send();
 
 
-    function sendTip(){
+    function sendTip(tipTerm){
         var xhr = new XMLHttpRequest();
         xhr.open( 'POST', TIP_URL, true );
         xhr.setRequestHeader( 'Content-Type', 'application/x-www-form-urlencoded' );
@@ -154,11 +154,9 @@
                 console.log( 'Tip sent' );
             }
         }
-        xhr.send( 'term=' + latestTerm );
+        xhr.send( 'term=' + tipTerm );
     }
 
-
-    //Function for opening windows and tabs
 
     function showWindows(term, newTerm, windowWidth, windowHeight, windowScreenLeft, windowScreenTop, searchOriginWindow) {
         if(typeof currentURL === 'undefined'){
@@ -169,13 +167,6 @@
             return false;
         }
 
-        if (doLog) {
-            console.log(term);
-            console.log('windowWidth sent from content: ',windowWidth);
-            console.log(windowHeight);
-            console.log(windowScreenLeft);
-            console.log(windowScreenTop);
-        }
 
         width = windowWidth;
         height = windowHeight;
@@ -184,15 +175,10 @@
 
         if(!initialWidth){
             initialWidth = windowWidth;
-            console.log('SETTING INITIAL WIDTH: ', initialWidth);
         }
 
         var link = currentURL + newTerm;
         var originLink = currentURL + term;
-
-        if (doLog) {
-            console.log('Link: ', link);
-        }
 
         if (!windowRight || typeof windowRight === 'undefined') {
             resizeNextContent = true;
@@ -203,7 +189,6 @@
                 eventListenerWindowRight = true;
             }
 
-            console.log('setting tabRight');
             tabRight = windowRight.tabs[0];
             if(!eventListenerTabRight){
                 tabRight.addEventListener('close', closeHandlerTabRight, false);
@@ -220,9 +205,6 @@
                 top: Math.max(wTop, 0)});
         }
         else {
-            if (doLog) {
-                console.log('Should update alternate window');
-            }
 
             if (searchOriginWindow.page === tabRight.page) {
                 if(tabLeft !== false){
@@ -239,7 +221,6 @@
                 }
             }
             if(!tabRight){
-                console.log('in showWindows - tab right was false, opening new tab..')
                 tabRight = windowRight.openTab();
                 if(!eventListenerTabRight){
                     tabRight.addEventListener('close', closeHandlerTabRight, false);
@@ -263,34 +244,16 @@
         var whiteList = [];
         var blackList = [];
         whiteList[0] = 'http://www.google.se';
-        // if( tabLeft !== false ){
-            var URI = safari.extension.addContentStyleSheetFromURL(
-                safari.extension.baseURI + 'toolbar.css',
-                whiteList,
-                blackList
-            );
-            console.log(URI);
-        // }
-        // if( tabRight !== false ){
-            // var URI = safari.extension.addContentStyleSheetFromURL(
-            //     safari.extension.baseURI + 'toolbar.css',
-            //     whiteList,
-            //     blackList
-            // );
-            // console.log(URI);
-        // }
-        // if( !tabLeft && !tabRight ){
-            // var URI = safari.extension.addContentStyleSheetFromURL(
-            //     safari.extension.baseURI + 'toolbar.css',
-            //     whiteList,
-            //     blackList
-            // );
-            // console.log(URI);
-        // }
+        whiteList[1] = 'http://www.google.com';
+        whiteList[2] = 'http://www.bing.se';
+        whiteList[3] = 'http://www.bing.com';
+
+        var URI = safari.extension.addContentStyleSheetFromURL(
+            safari.extension.baseURI + 'toolbar.css',
+            whiteList,
+            blackList
+        );
     }
-
-
-
 
 
     function hasBetterTerm( term ){
@@ -308,6 +271,14 @@
             }
         }
         return false;
+    }
+
+
+    function isValidUrl( url ){
+        if( !getEngine( url ) ){
+            return false;
+        }
+        return true;
     }
 
 
@@ -336,21 +307,12 @@
     }
 
 
-    function isValidUrl( url ){
-        if( !getEngine( url ) ){
-            return false;
-        }
-        return true;
-    }
-
-
     //Content script calls this function to get information about the search engine.
     //If the website matches any of the required, the terms will be declared and the
     // search field selector will be sent back to the content script
 
     function getEngineInformation(messageEvent) {
         var currentEngine = getEngine( messageEvent.message.url );
-
 
         if(!currentEngine){
             return false;
@@ -362,7 +324,6 @@
         }
         currentURL = currentEngine.url;
         englishTerms = jsonData.terms[ currentEngine.terms ].eng;
-        console.log('going to run toolbar script');
         runToolbarScript();
 
         messageEvent.target.page.dispatchMessage('message', {
@@ -374,18 +335,41 @@
 
 
     function enableToolbar(){
-        console.log('ENABLING TOOLBAR!!!!!!!');
         showBar = true;
         localStorage.setItem('showBar', showBar);
         runToolbarScript();
+        sendToolbarStatusToAll();
+    }
+
+    function sendToolbarStatusToAll(){
+        if(windowLeft !== false){
+            if(typeof windowLeft.tabs !== 'undefined'){
+                for(var i = 0; i < windowLeft.tabs.length; i++){
+                    if(typeof windowLeft.tabs[i].page !== 'undefined'){
+                        windowLeft.tabs[i].page.dispatchMessage('message', {
+                            showBar: showBar
+                        });
+                    }
+                }
+            }
+        }
+
+        if(windowRight !== false){
+            if(typeof windowRight.tabs !== 'undefined'){
+                for(var j = 0; j < windowRight.tabs.length; j++){
+                    if(typeof windowRight.tabs[j].page !== 'undefined'){
+                        windowRight.tabs[j].page.dispatchMessage('message', {
+                            showBar: showBar
+                        });
+                    }
+                }
+            }
+        }
     }
 
     //Message handler for all incoming messages
 
     safari.application.addEventListener('message', function(MessageEvent) {
-        if(doLog){
-            console.log('Received action: ', MessageEvent.message.action);
-        }
 
         var betterTerm = false;
 
@@ -409,18 +393,13 @@
                 break;
 
             case 'searchForTerm':
-                latestTerm = MessageEvent.message.term;
                 betterTerm = hasBetterTerm(MessageEvent.message.term);
 
                 if(betterTerm){
-                    if (doLog) {
-                        console.log('received term: ', MessageEvent.message.term);
-                        console.log('currentTerms: ', currentTerms);
-                        console.log('Using term: ', MessageEvent.message.term.toLowerCase());
-                    }
 
-                    if(!tabLeft && !tabRight){
-                        console.log('tableft and tabright are false')
+                    if(MessageEvent.target !== tabLeft && MessageEvent.target !== tabRight){
+
+                        console.log('first search made, setting windowLeft and tabLeft');
                         tabLeft = MessageEvent.target;
                         if(!eventListenerTabLeft){
                             tabLeft.addEventListener('close', closeHandlerTabLeft, false);
@@ -433,14 +412,18 @@
                         }
                     }
 
-                    else if(MessageEvent.target !== tabLeft){
-                        console.log('search was made from right window')
-                        tabRight = MessageEvent.target;
-                        if(!eventListenerTabRight){
-                            tabRight.addEventListener('close', closeHandlerTabRight, false);
-                            eventListenerTabRight = true;
+                    else if(MessageEvent.target.browserWindow !== windowLeft){
+                        console.log('Search was not made from left window');
+                        if(!windowLeft){
+                            console.log('and window left was false, setting window left to target');
+                            windowLeft = MessageEvent.target.browserWindow;
+                            if(!eventListenerWindowLeft){
+                                windowLeft.addEventListener('close', closeHandlerWindowLeft, false);
+                                eventListenerWindowLeft = true;
+                            }
                         }
                     }
+
                     showWindows(MessageEvent.message.term, betterTerm, MessageEvent.message.windowWidth, MessageEvent.message.windowHeight, MessageEvent.message.windowScreenLeft, MessageEvent.message.windowScreenTop, MessageEvent.target);
                 }
 
@@ -551,40 +534,18 @@
                 }
                 break;
 
-
-            case 'getLatestTerm':
-                MessageEvent.target.page.dispatchMessage('message', {
-                    latestTerm: latestTerm
-                });
-                break;
-
             case 'sendTip':
-                sendTip();
-                break;
-
-            case 'addToolbar':
-                runToolbarScript();
+                sendTip(MessageEvent.message.tipTerm);
                 break;
 
             case 'getToolbarStatus':
-                console.log('showBar: ', showBar);
-                if(typeof MessageEvent.target.page !== 'undefined'){
-                    MessageEvent.target.page.dispatchMessage('message', {
-                        showBar: showBar
-                    });
-                }
-                break;
+                sendToolbarStatusToAll();
 
-            // case 'enableToolbar':
-            //     showBar = true;
-            //     localStorage.setItem('showBar', showBar);
-            //     runToolbarScript();
-            //     break;
+                break;
 
             case 'disableToolbar':
                 showBar = false;
                 localStorage.setItem('showBar', showBar);
-                runToolbarScript();
                 break;
 
             default:

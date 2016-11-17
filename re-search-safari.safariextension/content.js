@@ -234,47 +234,41 @@
 
 	function approveTip(){
 		document.querySelector( '.re-search-tip-text' ).classList.add( 're-search-hidden' );
-		document.querySelector( '.re-search-approve-tip-button' ).classList.add( 're-search-hidden' );
-		document.querySelector( '.re-search-deny-tip-button' ).classList.add( 're-search-hidden' );
-		document.querySelector( '.re-search-approved-tip-text' ).classList.remove( 're-search-hidden' );
-		document.querySelector( '.re-search-select' ).classList.remove( 're-search-hidden' );
-		document.querySelector( '.re-search-share-wrapper' ).classList.remove( 're-search-hidden' );
-		document.querySelector( '.re-search-read-more-button' ).classList.remove( 're-search-hidden' );
-		document.querySelector( '.re-search-on-off-toggle' ).classList.remove( 're-search-hidden' );
-		document.querySelector( '.re-search-hide-button' ).classList.remove( 're-search-hidden' );
+        document.querySelector( '.re-search-approve-tip-button' ).classList.add( 're-search-hidden' );
+        document.querySelector( '.re-search-deny-tip-button' ).classList.add( 're-search-hidden' );
 
-		safari.self.tab.dispatchMessage('message', {
-			action: 'sendTip'
-		});
+        document.querySelector( '.re-search-approved-tip-text' ).classList.remove( 're-search-hidden' );
+
+
+		if (elements[0].value.length > 0) {
+			safari.self.tab.dispatchMessage('message', {
+				action: 'sendTip',
+				tipTerm: elements[0].value
+			});
+		}
 	}
 
 	function hideTip(){
 		document.querySelector( '.re-search-tip-button' ).classList.remove( 're-search-hidden' );
-		document.querySelector( '.re-search-select' ).classList.remove( 're-search-hidden' );
-		document.querySelector( '.re-search-share-wrapper' ).classList.remove( 're-search-hidden' );
-		document.querySelector( '.re-search-read-more-button' ).classList.remove( 're-search-hidden' );
-		document.querySelector( '.re-search-on-off-toggle' ).classList.remove( 're-search-hidden' );
-		document.querySelector( '.re-search-hide-button' ).classList.remove( 're-search-hidden' );
+
 		document.querySelector( '.re-search-tip-text' ).classList.add( 're-search-hidden' );
 		document.querySelector( '.re-search-approve-tip-button' ).classList.add( 're-search-hidden' );
-		// document.querySelector( '.re-search-deny-tip-button' ).classList.add( 're-search-hidden' );
+		document.querySelector( '.re-search-deny-tip-button' ).classList.add( 're-search-hidden' );
 	}
 
-	function showTip(){
-		document.querySelector( '.re-search-tip-button' ).classList.add( 're-search-hidden' );
-		document.querySelector( '.re-search-select' ).classList.add( 're-search-hidden' );
-		document.querySelector( '.re-search-share-wrapper' ).classList.add( 're-search-hidden' );
-		document.querySelector( '.re-search-read-more-button' ).classList.add( 're-search-hidden' );
-		document.querySelector( '.re-search-on-off-toggle' ).classList.add( 're-search-hidden' );
-		document.querySelector( '.re-search-hide-button' ).classList.add( 're-search-hidden' );
 
-		safari.self.tab.dispatchMessage('message', {
-			action: 'getLatestTerm'
-		});
+	function showTip(tipTerm){
+		document.querySelector( '.re-search-tip-button' ).classList.add( 're-search-hidden' );
+
+		document.querySelector( '.re-search-tip-text' ).classList.remove( 're-search-hidden' );
+		document.querySelector( '.re-search-approve-tip-button' ).classList.remove( 're-search-hidden' );
+		document.querySelector( '.re-search-deny-tip-button' ).classList.remove( 're-search-hidden' );
+		document.querySelector( '.re-search-tip-term' ).innerText = tipTerm;
 	}
 
 	function showShareButtons(){
 		document.querySelector( '.re-search-share-button' ).classList.add( 're-search-hidden' );
+
 		document.querySelector( '.re-search-share-twitter' ).classList.remove( 're-search-hidden' );
 		document.querySelector( '.re-search-share-facebook' ).classList.remove( 're-search-hidden' );
 		document.querySelector( '.re-search-share-linkedin' ).classList.remove( 're-search-hidden' );
@@ -312,12 +306,18 @@
 				safari.self.tab.dispatchMessage('message', {
 					action: 'disableToolbar'
 				});
+
+				safari.self.tab.dispatchMessage('message', {
+					action: 'getToolbarStatus'
+				});
 			}
 		});
 
 		window.addEventListener( 'click', function( event ){
 			if( event.target.classList.contains( 're-search-tip-button' ) ){
-				showTip();
+				if (elements[0].value.length > 0) {
+					showTip(elements[0].value);
+				}
 			}
 		});
 
@@ -357,8 +357,6 @@
 		}
 
 		lastSentTerm = term;
-
-		console.log('Sending', term);
 
 		safari.self.tab.dispatchMessage("searchForTerm", {
 			action: "searchForTerm",
@@ -405,7 +403,6 @@
 	}
 
 	function getSearchTerm() {
-		console.log('SelectorInput: ', inputSelector);
 		elements = document.querySelectorAll(inputSelector);
 		if (elements.length === 0) {
 			setTimeout(getSearchTerm, 100);
@@ -420,8 +417,6 @@
 
 
 	safari.self.addEventListener('message', function(response) {
-		console.log(response);
-
 		if (response.message.hasOwnProperty("selectorSearchField")) {
 
 			if (response.message.selectorSearchField !== false) {
@@ -431,7 +426,6 @@
 		}
 
 		else if(response.message.hasOwnProperty('resizeWindow')){
-			console.log('Should resize window');
 			resizeWindow(
 				response.message.width,
 				response.message.height,
@@ -446,6 +440,9 @@
 					action: 'isValidUrl',
 					url: window.location.href
 				});
+			}
+			else{
+				removeToolbar();
 			}
 		}
 
@@ -471,10 +468,7 @@
 		}
 
 		else if(response.message.hasOwnProperty('latestTerm')){
-			document.querySelector( '.re-search-tip-text' ).classList.remove( 're-search-hidden' );
-			document.querySelector( '.re-search-approve-tip-button' ).classList.remove( 're-search-hidden' );
-			document.querySelector( '.re-search-deny-tip-button' ).classList.remove( 're-search-hidden' );
-			document.querySelector( '.re-search-tip-term' ).innerText = response.message.latestTerm;
+			showTip(response.message.latestTerm);
 		}
 	}, false);
 
