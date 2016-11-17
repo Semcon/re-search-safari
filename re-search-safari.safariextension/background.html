@@ -13,11 +13,14 @@
 
     var doLog = false;
 
+    var dropdownTerms;
     var currentTerms;
     var currentURL;
     var jsonData;
 
-    var DATA_URL = 'https://api.myjson.com/bins/1rq4a';
+    // var DATA_URL = 'https://api.myjson.com/bins/1rq4a';
+    var DATA_URL = 'https://api.myjson.com/bins/1bv2i';
+
     var TIP_URL = 'http://example.com';
 
     var resizeNextContent = false;
@@ -39,19 +42,10 @@
     var eventListenerTabLeft = false;
     var eventListenerTabRight = false;
 
-    var showPopups = true;
     var showBar = true;
 
 
-    //First time running script to check what value runState is in chrome storage.
-    //If runState is undefined it is gets set to enabled otherwise it gets the value.
-
-    showPopups = localStorage.getItem('runState');
-
-    if( typeof showPopups === 'undefined' || showPopups === null ){
-        showPopups = true;
-        localStorage.setItem('runState', showPopups);
-    }
+    
 
     showBar = localStorage.getItem('showBar');
 
@@ -60,6 +54,21 @@
         localStorage.setItem('showBar', showBar);
     }
 
+    function enableToolbar(){
+        console.log('in enableToolbar');
+        showBar = true;
+        localStorage.setItem('showBar', showBar);
+        runToolbarScript();
+        sendToolbarStatusToAll();
+        console.log('enableToolbar done');
+    }
+
+    function disableToolbar(){
+        showBar = false;
+        localStorage.setItem('showBar', showBar);
+        runToolbarScript();
+        sendToolbarStatusToAll();
+    }
 
     //Close handlers for windows and tabs
 
@@ -163,10 +172,6 @@
             return false;
         }
 
-        if(!showPopups){
-            return false;
-        }
-
 
         width = windowWidth;
         height = windowHeight;
@@ -241,36 +246,31 @@
         if( !currentURL ){
             return false;
         }
-        var whiteList = [];
-        var blackList = [];
-        whiteList[0] = 'http://www.google.se';
-        whiteList[1] = 'http://www.google.com';
-        whiteList[2] = 'http://www.bing.se';
-        whiteList[3] = 'http://www.bing.com';
 
         var URI = safari.extension.addContentStyleSheetFromURL(
-            safari.extension.baseURI + 'toolbar.css',
-            whiteList,
-            blackList
+            safari.extension.baseURI + 'toolbar.css'
         );
+        console.log(URI);
+        console.log('runToolbarScript done');
     }
-
 
     function hasBetterTerm( term ){
         var lowercaseTerms;
-        if( typeof currentTerms === 'undefined' ){
-            return false;
-        }
-        term = term.toLowerCase();
-        for(var i = 0; i < currentTerms.length; i++ ){
-            lowercaseTerms = Object.keys( currentTerms[ i ] ).map( function( string ){
-                return string.toLowerCase();
-            });
-            if( lowercaseTerms.indexOf( term ) > -1 ){
-                return currentTerms[ i ][ Object.keys( currentTerms[ i ] )[ lowercaseTerms.indexOf( term ) ] ];
-            }
-        }
-        return false;
+         if( typeof currentTerms === 'undefined' ){
+             return false;
+         }
+
+         term = term.toLowerCase();
+
+         lowercaseTerms = Object.keys( currentTerms ).map( function( string ){
+             return string.toLowerCase();
+         });
+
+         if( lowercaseTerms.indexOf( term ) > -1 ){
+             return currentTerms[ Object.keys( currentTerms )[ lowercaseTerms.indexOf( term ) ] ];
+         }
+
+         return false;
     }
 
 
@@ -314,16 +314,21 @@
     function getEngineInformation(messageEvent) {
         var currentEngine = getEngine( messageEvent.message.url );
 
-        if(!currentEngine){
+        if( !currentEngine ){
             return false;
         }
 
-        currentTerms = [];
+        currentTerms = {};
+        dropdownTerms = [];
+
         for ( var key in jsonData.terms[ currentEngine.terms ] ){
-            currentTerms.push( jsonData.terms[ currentEngine.terms ][ key ] );
+            currentTerms[ key ] = jsonData.terms[ currentEngine.terms ][ key ].updated;
+            if( jsonData.terms[ currentEngine.terms ][ key ].dropdown ){
+                dropdownTerms.push( key );
+            }
         }
+
         currentURL = currentEngine.url;
-        englishTerms = jsonData.terms[ currentEngine.terms ].eng;
         runToolbarScript();
 
         messageEvent.target.page.dispatchMessage('message', {
@@ -333,16 +338,18 @@
         return true;
     }
 
+    function sendToolbarStatusToAll(target){
 
-    function enableToolbar(){
-        showBar = true;
-        localStorage.setItem('showBar', showBar);
-        runToolbarScript();
-        sendToolbarStatusToAll();
-    }
+        if(!windowLeft && !windowRight){
+            console.log('sendToolbarStatusToAll - both windows are false')
 
-    function sendToolbarStatusToAll(){
+            target.dispatchMessage('message', {
+                showBar: showBar
+            });
+        }
+
         if(windowLeft !== false){
+            console.log('sendToolbarStatusToAll - in windowLeft not false')
             if(typeof windowLeft.tabs !== 'undefined'){
                 for(var i = 0; i < windowLeft.tabs.length; i++){
                     if(typeof windowLeft.tabs[i].page !== 'undefined'){
@@ -355,6 +362,8 @@
         }
 
         if(windowRight !== false){
+            console.log('sendToolbarStatusToAll - in windowRight not false')
+
             if(typeof windowRight.tabs !== 'undefined'){
                 for(var j = 0; j < windowRight.tabs.length; j++){
                     if(typeof windowRight.tabs[j].page !== 'undefined'){
@@ -365,6 +374,7 @@
                 }
             }
         }
+        console.log('sendToolbarStatusToAll done');
     }
 
     //Message handler for all incoming messages
@@ -394,8 +404,11 @@
 
             case 'searchForTerm':
                 betterTerm = hasBetterTerm(MessageEvent.message.term);
+                console.log('after betterTerm', betterTerm);
 
+                console.log(dropdownTerms);
                 if(betterTerm){
+                    console.log('betterTerm was found');
 
                     if(MessageEvent.target !== tabLeft && MessageEvent.target !== tabRight){
 
@@ -453,73 +466,10 @@
                 }
                 break;
 
-            case 'getRunState':
-                MessageEvent.target.page.dispatchMessage("message", {
-                    runState: showPopups
-                });
-                break;
-
-            case 'disablePopups':
-                showPopups = false;
-
-                localStorage.setItem('runState', showPopups);
-
-                if(tabLeft !== false){
-                    tabLeft.page.dispatchMessage('message', {
-                        action: 'stateChanged',
-                        runState: showPopups
-                    });
-                }
-
-                if(tabRight !== false){
-                    tabRight.page.dispatchMessage('message', {
-                        action: 'stateChanged',
-                        runState: showPopups
-                    });
-                }
-
-                if(MessageEvent.target.page !== tabLeft && MessageEvent.target.page !== tabRight){
-                    MessageEvent.target.page.dispatchMessage('message', {
-                        action: 'stateChanged',
-                        runState: showPopups
-                    });
-                }
-
-                break;
-
-            case 'enablePopups':
-                showPopups = true;
-
-                localStorage.setItem('runState', showPopups);
-
-                if(tabLeft !== false){
-                    tabLeft.page.dispatchMessage('message', {
-                        action: 'stateChanged',
-                        runState: showPopups
-                    });
-                }
-
-                if(tabRight !== false){
-                    tabRight.page.dispatchMessage('message', {
-                        action: 'stateChanged',
-                        runState: showPopups
-                    });
-                }
-
-                if(MessageEvent.target.page !== tabLeft && MessageEvent.target.page !== tabRight){
-                    MessageEvent.target.page.dispatchMessage('message', {
-                        action: 'stateChanged',
-                        runState: showPopups
-                    });
-                }
-
-                break;
-
-            case 'getEnglishTerms':
+            case 'getDropdownTerms':
                 MessageEvent.target.page.dispatchMessage('message', {
-                    englishTerms: englishTerms
+                    dropdownTerms: dropdownTerms
                 });
-
 
             case 'isValidUrl':
                 if( isValidUrl(MessageEvent.message.url) ){
@@ -539,13 +489,11 @@
                 break;
 
             case 'getToolbarStatus':
-                sendToolbarStatusToAll();
-
+                sendToolbarStatusToAll(MessageEvent.target.page);
                 break;
 
             case 'disableToolbar':
-                showBar = false;
-                localStorage.setItem('showBar', showBar);
+                disableToolbar();
                 break;
 
             default:

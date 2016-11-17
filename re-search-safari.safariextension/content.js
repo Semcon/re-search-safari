@@ -10,9 +10,8 @@
 
 	//Toolbar functions
 
-	function getSelectList( englishTerms ){
+	function getSelectList( terms ){
 		//Create and append select list
-		var terms = Object.keys( englishTerms );
 		var selectList = document.createElement( 'select');
 		selectList.className = 're-search-select';
 		selectList.id = "termList";
@@ -87,7 +86,7 @@
 		return shareWrapper;
 	}
 
-	function getToolbar(englishTerms){
+	function getToolbar(dropdownTerms){
 		var toolbar = document.createElement( 'div' );
 		toolbar.className = 're-search-toolbar';
 		toolbar.id = 're-search-toolbar';
@@ -108,7 +107,7 @@
 
 		toolbar.appendChild( tipButton );
 
-		var selectList = getSelectList( englishTerms );
+		var selectList = getSelectList( dropdownTerms );
 		toolbar.insertBefore( selectList, tipButton );
 
 		var approvedTipText = document.createElement( 'div' );
@@ -146,26 +145,6 @@
 
 		toolbar.appendChild( hideButton );
 
-		var onOffToggle = document.createElement( 'div' );
-		onOffToggle.className = 're-search-on-off-toggle';
-
-		var onOffPaddle = document.createElement( 'div' );
-		onOffPaddle.className = 're-search-on-off-paddle';
-
-		var onText = document.createElement( 'a' );
-        onText.className = 're-search-on-off-text';
-        onText.innerText = 'On';
-
-        var offText = document.createElement( 'a' );
-        offText.className = 're-search-on-off-text';
-        offText.innerText = 'Off';
-
-		onOffToggle.appendChild( onOffPaddle );
-		onOffToggle.appendChild( onText );
-		onOffToggle.appendChild( offText );
-
-		toolbar.appendChild( onOffToggle );
-
 		var readMoreButton = document.createElement( 'a' );
 		readMoreButton.className = 're-search-read-more-button';
 		readMoreButton.innerText = 'Read more';
@@ -178,11 +157,11 @@
 		return toolbar;
 	}
 
-	function injectToolbar(englishTerms){
+	function injectToolbar(dropdownTerms){
 		if( document.getElementById( 're-search-toolbar' ) ){
 			return false;
 		}
-		var toolbar = getToolbar(englishTerms);
+		var toolbar = getToolbar(dropdownTerms);
 		var body = document.querySelectorAll( 'body' )[ 0 ];
 		var currentStyle;
 		var newStyle;
@@ -220,25 +199,16 @@
 		}
 	}
 
-	function setDisabledState(){
-		document.querySelector( '.re-search-on-off-toggle' ).classList.remove( 'active' );
-		document.querySelector( '.re-search-select' ).setAttribute( 'disabled', 'disabled' );
-		document.querySelector( '.re-search-tip-button' ).setAttribute( 'disabled', 'disabled' );
-	}
-
-	function setEnabledState(){
-		document.querySelector( '.re-search-on-off-toggle' ).classList.add( 'active' );
-		document.querySelector( '.re-search-select' ).removeAttribute( 'disabled' );
-		document.querySelector( '.re-search-tip-button' ).removeAttribute( 'disabled' );
-	}
-
 	function approveTip(){
 		document.querySelector( '.re-search-tip-text' ).classList.add( 're-search-hidden' );
         document.querySelector( '.re-search-approve-tip-button' ).classList.add( 're-search-hidden' );
         document.querySelector( '.re-search-deny-tip-button' ).classList.add( 're-search-hidden' );
 
         document.querySelector( '.re-search-approved-tip-text' ).classList.remove( 're-search-hidden' );
-
+        document.querySelector( '.re-search-select' ).classList.remove( 're-search-hidden' );
+        document.querySelector( '.re-search-share-wrapper' ).classList.remove( 're-search-hidden' );
+        document.querySelector( '.re-search-read-more-button' ).classList.remove( 're-search-hidden' );
+        document.querySelector( '.re-search-hide-button' ).classList.remove( 're-search-hidden' );
 
 		if (elements[0].value.length > 0) {
 			safari.self.tab.dispatchMessage('message', {
@@ -246,24 +216,6 @@
 				tipTerm: elements[0].value
 			});
 		}
-	}
-
-	function hideTip(){
-		document.querySelector( '.re-search-tip-button' ).classList.remove( 're-search-hidden' );
-
-		document.querySelector( '.re-search-tip-text' ).classList.add( 're-search-hidden' );
-		document.querySelector( '.re-search-approve-tip-button' ).classList.add( 're-search-hidden' );
-		document.querySelector( '.re-search-deny-tip-button' ).classList.add( 're-search-hidden' );
-	}
-
-
-	function showTip(tipTerm){
-		document.querySelector( '.re-search-tip-button' ).classList.add( 're-search-hidden' );
-
-		document.querySelector( '.re-search-tip-text' ).classList.remove( 're-search-hidden' );
-		document.querySelector( '.re-search-approve-tip-button' ).classList.remove( 're-search-hidden' );
-		document.querySelector( '.re-search-deny-tip-button' ).classList.remove( 're-search-hidden' );
-		document.querySelector( '.re-search-tip-term' ).innerText = tipTerm;
 	}
 
 	function showShareButtons(){
@@ -274,21 +226,33 @@
 		document.querySelector( '.re-search-share-linkedin' ).classList.remove( 're-search-hidden' );
 	}
 
-	function addListenersToolbar(){
-		window.addEventListener( 'click', function( event ){
-			if( event.target.classList.contains( 're-search-on-off-text' ) || event.target.classList.contains( 're-search-on-off-paddle' ) ){
-				if( document.querySelector( '.re-search-on-off-toggle' ).classList.contains( 'active' ) ){
-					safari.self.tab.dispatchMessage('message', {
-						action: 'disablePopups'
-					});
+	function hideTip(){
+		document.querySelector( '.re-search-tip-button' ).classList.remove( 're-search-hidden' );
+		document.querySelector( '.re-search-select' ).classList.remove( 're-search-hidden' );
+		document.querySelector( '.re-search-share-wrapper' ).classList.remove( 're-search-hidden' );
+		document.querySelector( '.re-search-read-more-button' ).classList.remove( 're-search-hidden' );
+		document.querySelector( '.re-search-hide-button' ).classList.remove( 're-search-hidden' );
 
-				} else {
-					safari.self.tab.dispatchMessage('message', {
-						action: 'enablePopups'
-					});
-				}
-			}
-		});
+		document.querySelector( '.re-search-tip-text' ).classList.add( 're-search-hidden' );
+		document.querySelector( '.re-search-approve-tip-button' ).classList.add( 're-search-hidden' );
+		document.querySelector( '.re-search-deny-tip-button' ).classList.add( 're-search-hidden' );
+	}
+
+
+	function showTip(tipTerm){
+		document.querySelector( '.re-search-tip-button' ).classList.add( 're-search-hidden' );
+		document.querySelector( '.re-search-select' ).classList.add( 're-search-hidden' );
+		document.querySelector( '.re-search-share-wrapper' ).classList.add( 're-search-hidden' );
+		document.querySelector( '.re-search-read-more-button' ).classList.add( 're-search-hidden' );
+		document.querySelector( '.re-search-hide-button' ).classList.add( 're-search-hidden' );
+
+		document.querySelector( '.re-search-tip-text' ).classList.remove( 're-search-hidden' );
+		document.querySelector( '.re-search-approve-tip-button' ).classList.remove( 're-search-hidden' );
+		document.querySelector( '.re-search-deny-tip-button' ).classList.remove( 're-search-hidden' );
+		document.querySelector( '.re-search-tip-term' ).innerText = tipTerm;
+	}
+
+	function addListenersToolbar(){
 
 		window.addEventListener( 'change', function(event){
 			if( event.target.id === 'termList' ){
@@ -357,7 +321,7 @@
 		}
 
 		lastSentTerm = term;
-
+		console.log(term);
 		safari.self.tab.dispatchMessage("searchForTerm", {
 			action: "searchForTerm",
 			term: term,
@@ -449,27 +413,15 @@
 		else if(response.message.hasOwnProperty('valid')){
 			if(response.message.valid){
 				safari.self.tab.dispatchMessage('message', {
-					action: 'getEnglishTerms',
+					action: 'getDropdownTerms',
 				});
 			}
 		}
 
-		else if(response.message.hasOwnProperty('englishTerms')){
-			injectToolbar(response.message.englishTerms);
+		else if(response.message.hasOwnProperty('dropdownTerms')){
+			injectToolbar(response.message.dropdownTerms);
 		}
 
-		else if(response.message.hasOwnProperty('runState')){
-			if(response.message.runState){
-				setEnabledState();
-			}
-			else {
-				setDisabledState();
-			}
-		}
-
-		else if(response.message.hasOwnProperty('latestTerm')){
-			showTip(response.message.latestTerm);
-		}
 	}, false);
 
 
