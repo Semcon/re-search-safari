@@ -5,7 +5,7 @@
 	var titleTerm = false;
 	var listenersAdded = false;
 	var lastSentTerm = false;
-	var tipUrl = 'http://example.com';
+	var tipUrl = 'http://www.example.com';
 
 
 	//Toolbar functions
@@ -286,7 +286,7 @@
 		});
 
 		window.addEventListener( 'click', function( event ){
-			if( event.target.classList.contains( 're-search-deny-tip-button' ) ){
+			if( event.target.contains( 're-search-deny-tip-button' ) ){
 				hideTip();
 			}
 		});
@@ -305,7 +305,7 @@
 		});
 
 		safari.self.tab.dispatchMessage('message', {
-			action: 'getRunState'
+			action: 'getToolbarStatus'
 		});
 	}
 
@@ -321,7 +321,7 @@
 		}
 
 		lastSentTerm = term;
-		console.log(term);
+
 		safari.self.tab.dispatchMessage("searchForTerm", {
 			action: "searchForTerm",
 			term: term,
@@ -333,10 +333,8 @@
 	}
 
 	function resizeWindow(width, height, left, top){
-		console.log('WIDTH: ', width);
 		window.resizeTo(width, height);
 		window.moveTo(left, top);
-		console.log('has resized');
 	}
 
 	function getTitle() {

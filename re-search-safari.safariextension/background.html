@@ -10,17 +10,12 @@
 <body>
     <script>
 
-
-    var doLog = false;
-
     var dropdownTerms;
     var currentTerms;
     var currentURL;
     var jsonData;
 
-    // var DATA_URL = 'https://api.myjson.com/bins/1rq4a';
     var DATA_URL = 'https://api.myjson.com/bins/1bv2i';
-
     var TIP_URL = 'http://example.com';
 
     var resizeNextContent = false;
@@ -45,7 +40,7 @@
     var showBar = true;
 
 
-    
+
 
     showBar = localStorage.getItem('showBar');
 
@@ -55,12 +50,15 @@
     }
 
     function enableToolbar(){
-        console.log('in enableToolbar');
         showBar = true;
         localStorage.setItem('showBar', showBar);
         runToolbarScript();
         sendToolbarStatusToAll();
-        console.log('enableToolbar done');
+        var popovers = safari.extension.popovers;
+
+        for(var i = 0; i < popovers.length; i++){
+            popovers[i].contentWindow.postMessage('enableToolbar', '*');
+        }
     }
 
     function disableToolbar(){
@@ -68,6 +66,11 @@
         localStorage.setItem('showBar', showBar);
         runToolbarScript();
         sendToolbarStatusToAll();
+        var popovers = safari.extension.popovers;
+
+        for(var i = 0; i < popovers.length; i++){
+            popovers[i].contentWindow.postMessage('disableToolbar', '*');
+        }
     }
 
     //Close handlers for windows and tabs
@@ -87,6 +90,7 @@
     function closeHandlerWindowLeft(){
         windowLeft.removeEventListener('close', closeHandlerWindowLeft, false);
         eventListenerWindowLeft = false;
+        windowLeft = false;
         if(windowRight !== false){
             if(typeof windowRight.tabs !== 'undefined'){
                 for(var i = 0; i < windowRight.tabs.length; i++){
@@ -172,7 +176,6 @@
             return false;
         }
 
-
         width = windowWidth;
         height = windowHeight;
         left = windowScreenLeft;
@@ -250,8 +253,6 @@
         var URI = safari.extension.addContentStyleSheetFromURL(
             safari.extension.baseURI + 'toolbar.css'
         );
-        console.log(URI);
-        console.log('runToolbarScript done');
     }
 
     function hasBetterTerm( term ){
@@ -341,15 +342,18 @@
     function sendToolbarStatusToAll(target){
 
         if(!windowLeft && !windowRight){
-            console.log('sendToolbarStatusToAll - both windows are false')
 
-            target.dispatchMessage('message', {
-                showBar: showBar
-            });
+            var browserWindows = safari.application.browserWindows;
+            for(var i=0; i < browserWindows.length; i++){
+                if(typeof browserWindows[i].activeTab.page !== 'undefined'){
+                    browserWindows[i].activeTab.page.dispatchMessage('message', {
+                        showBar: showBar
+                    });
+                }
+            }
         }
 
         if(windowLeft !== false){
-            console.log('sendToolbarStatusToAll - in windowLeft not false')
             if(typeof windowLeft.tabs !== 'undefined'){
                 for(var i = 0; i < windowLeft.tabs.length; i++){
                     if(typeof windowLeft.tabs[i].page !== 'undefined'){
@@ -362,8 +366,6 @@
         }
 
         if(windowRight !== false){
-            console.log('sendToolbarStatusToAll - in windowRight not false')
-
             if(typeof windowRight.tabs !== 'undefined'){
                 for(var j = 0; j < windowRight.tabs.length; j++){
                     if(typeof windowRight.tabs[j].page !== 'undefined'){
@@ -374,7 +376,6 @@
                 }
             }
         }
-        console.log('sendToolbarStatusToAll done');
     }
 
     //Message handler for all incoming messages
@@ -404,15 +405,10 @@
 
             case 'searchForTerm':
                 betterTerm = hasBetterTerm(MessageEvent.message.term);
-                console.log('after betterTerm', betterTerm);
 
-                console.log(dropdownTerms);
                 if(betterTerm){
-                    console.log('betterTerm was found');
-
                     if(MessageEvent.target !== tabLeft && MessageEvent.target !== tabRight){
 
-                        console.log('first search made, setting windowLeft and tabLeft');
                         tabLeft = MessageEvent.target;
                         if(!eventListenerTabLeft){
                             tabLeft.addEventListener('close', closeHandlerTabLeft, false);
@@ -426,9 +422,7 @@
                     }
 
                     else if(MessageEvent.target.browserWindow !== windowLeft){
-                        console.log('Search was not made from left window');
                         if(!windowLeft){
-                            console.log('and window left was false, setting window left to target');
                             windowLeft = MessageEvent.target.browserWindow;
                             if(!eventListenerWindowLeft){
                                 windowLeft.addEventListener('close', closeHandlerWindowLeft, false);
@@ -497,9 +491,7 @@
                 break;
 
             default:
-                if (doLog) {
-                    console.log('Message to event page was not handled: ', MessageEvent.message);
-                }
+                console.log('Message to event page was not handled: ', MessageEvent.message);
         }
         return true;
     }, false);
