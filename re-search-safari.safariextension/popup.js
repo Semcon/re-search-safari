@@ -12,13 +12,13 @@
 
     window.addEventListener( 'click', function( event ){
         if( event.target.classList.contains( 're-search-yes-no-text' ) || event.target.classList.contains( 're-search-yes-no-paddle' ) ){
+            event.preventDefault();
             if( document.querySelector( '.re-search-yes-no-toggle' ).classList.contains( 'enabled' ) ){
                 disableToolbar();
             } else {
                 enableToolbar();
             }
         }
-        event.preventDefault();
     } );
 
     if(safari.extension.globalPage.contentWindow.showBar){

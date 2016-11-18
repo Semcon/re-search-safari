@@ -5,7 +5,9 @@
 	var titleTerm = false;
 	var listenersAdded = false;
 	var lastSentTerm = false;
-	var tipUrl = 'http://www.example.com';
+	var tipUrl = 'http://semcon.com/re-search-tip';
+	var shareUrl = 'http://semcon.com/re-search';
+	var shareTitle = 'Re-Search';	var transformString = 'transform: matrix3d(1,0,0.00,0,0.00,1,0.00,0,0,0,1,0,0,60,0,1);';
 
 
 	//Toolbar functions
@@ -44,7 +46,7 @@
 		shareWrapper.appendChild( shareButton );
 
 		var shareLinkedin = document.createElement( 'a' );
-		shareLinkedin.setAttribute( 'href', 'https://www.linkedin.com/shareArticle?url=http://example.com&title=Example' );
+		shareLinkedin.setAttribute( 'href', 'https://www.linkedin.com/shareArticle?url=' + shareUrl + '&title=' + shareTitle );
 		shareLinkedin.className = 're-search-share-linkedin re-search-hidden';
 		shareLinkedin.setAttribute( 'target', '_BLANK' );
 
@@ -57,7 +59,7 @@
 		shareWrapper.appendChild( shareLinkedin );
 
 		var shareFacebook = document.createElement( 'a' );
-		shareFacebook.setAttribute( 'href', 'https://www.facebook.com/sharer.php?u=http://example.com' );
+		shareFacebook.setAttribute( 'href', 'https://www.facebook.com/sharer.php?u=' + shareUrl );
 		shareFacebook.className = 're-search-share-facebook re-search-hidden';
 		shareFacebook.setAttribute( 'target', '_BLANK' );
 
@@ -70,7 +72,7 @@
 		shareWrapper.appendChild( shareFacebook );
 
 		var shareTwitter = document.createElement( 'a' );
-		shareTwitter.setAttribute( 'href', ' https://twitter.com/intent/tweet?url=http://example.com&text=Example' );
+		shareTwitter.setAttribute( 'href', 'https://twitter.com/intent/tweet?url=' + shareUrl + '&text=' + shareTitle );
 		shareTwitter.className = 're-search-share-twitter re-search-hidden';
 		shareTwitter.setAttribute( 'target', '_BLANK' );
 
@@ -110,6 +112,11 @@
 		var selectList = getSelectList( dropdownTerms );
 		toolbar.insertBefore( selectList, tipButton );
 
+		var selectArrow = document.createElement( 'div' );
+		selectArrow.className = 're-search-arrow-down';
+
+		toolbar.appendChild( selectArrow );
+
 		var approvedTipText = document.createElement( 'div' );
 		approvedTipText.className = 're-search-approved-tip-text re-search-hidden';
 		approvedTipText.innerText = 'Thumbs up! We\'ll look into that.';
@@ -141,14 +148,16 @@
 
 		var hideButton = document.createElement( 'a' );
 		hideButton.className = 're-search-hide-button';
-		hideButton.innerText = 'X';
-
+		var hideImage = document.createElement( 'img' );
+		hideImage.setAttribute( 'src', safari.extension.baseURI + 'icons/icon-close.png' );
+		hideImage.className = 're-search-hide-icon';
+		hideButton.appendChild( hideImage );
 		toolbar.appendChild( hideButton );
 
 		var readMoreButton = document.createElement( 'a' );
 		readMoreButton.className = 're-search-read-more-button';
 		readMoreButton.innerText = 'Read more';
-		readMoreButton.href = 'http://semcon.com';
+		readMoreButton.href = shareUrl;
 
 		toolbar.appendChild( readMoreButton );
 
@@ -168,9 +177,9 @@
 		for( var i = 0; i < body.children.length; i = i + 1 ){
 			currentStyle = body.children[ i ].getAttribute( 'style' );
 			if( !currentStyle ){
-				newStyle = 'transform: translateY( 60px );';
+				newStyle = transformString;
 			} else {
-				newStyle = currentStyle + '; transform: translateY( 60px );';
+				newStyle = currentStyle + '; ' + transformString;
 			}
 			body.children[ i ].setAttribute( 'style', newStyle );
 		}
@@ -179,25 +188,19 @@
 	}
 
 	function removeToolbar(){
-		var body = document.querySelectorAll( 'body' )[ 0 ];
-		var toolbar = document.getElementById( 're-search-toolbar' );
-
-		for( var i = 0; i < body.children.length; i = i + 1 ){
-			currentStyle = body.children[ i ].getAttribute( 'style' );
-
-			if( !currentStyle ){
-				newStyle = 'transform: translateY( 0px );';
-			} else {
-				newStyle = currentStyle + '; transform: translateY( 0px );';
-			}
-
-			body.children[ i ].setAttribute( 'style', newStyle );
-		}
-
-		if( toolbar ){
-			toolbar.remove();
-		}
-	}
+         var body = document.querySelectorAll( 'body' )[ 0 ];
+         var toolbar = document.getElementById( 're-search-toolbar' );
+         for( var i = 0; i < body.children.length; i = i + 1 ){
+             currentStyle = body.children[ i ].getAttribute( 'style' );
+             if( currentStyle ){
+                 newStyle = currentStyle.replace( transformString, '' );
+                 body.children[ i ].setAttribute( 'style', newStyle );
+             }
+         }
+         if( toolbar ){
+             toolbar.remove();
+         }
+     }
 
 	function approveTip(){
 		document.querySelector( '.re-search-tip-text' ).classList.add( 're-search-hidden' );
@@ -209,6 +212,7 @@
         document.querySelector( '.re-search-share-wrapper' ).classList.remove( 're-search-hidden' );
         document.querySelector( '.re-search-read-more-button' ).classList.remove( 're-search-hidden' );
         document.querySelector( '.re-search-hide-button' ).classList.remove( 're-search-hidden' );
+		document.querySelector( '.re-search-arrow-down' ).classList.remove( 're-search-hidden' );
 
 		if (elements[0].value.length > 0) {
 			safari.self.tab.dispatchMessage('message', {
@@ -228,14 +232,15 @@
 
 	function hideTip(){
 		document.querySelector( '.re-search-tip-button' ).classList.remove( 're-search-hidden' );
-		document.querySelector( '.re-search-select' ).classList.remove( 're-search-hidden' );
-		document.querySelector( '.re-search-share-wrapper' ).classList.remove( 're-search-hidden' );
-		document.querySelector( '.re-search-read-more-button' ).classList.remove( 're-search-hidden' );
-		document.querySelector( '.re-search-hide-button' ).classList.remove( 're-search-hidden' );
+        document.querySelector( '.re-search-select' ).classList.remove( 're-search-hidden' );
+        document.querySelector( '.re-search-share-wrapper' ).classList.remove( 're-search-hidden' );
+        document.querySelector( '.re-search-read-more-button' ).classList.remove( 're-search-hidden' );
+        document.querySelector( '.re-search-hide-button' ).classList.remove( 're-search-hidden' );
+        document.querySelector( '.re-search-arrow-down' ).classList.remove( 're-search-hidden' );
 
-		document.querySelector( '.re-search-tip-text' ).classList.add( 're-search-hidden' );
-		document.querySelector( '.re-search-approve-tip-button' ).classList.add( 're-search-hidden' );
-		document.querySelector( '.re-search-deny-tip-button' ).classList.add( 're-search-hidden' );
+        document.querySelector( '.re-search-tip-text' ).classList.add( 're-search-hidden' );
+        document.querySelector( '.re-search-approve-tip-button' ).classList.add( 're-search-hidden' );
+        document.querySelector( '.re-search-deny-tip-button' ).classList.add( 're-search-hidden' );
 	}
 
 
@@ -245,19 +250,19 @@
 		document.querySelector( '.re-search-share-wrapper' ).classList.add( 're-search-hidden' );
 		document.querySelector( '.re-search-read-more-button' ).classList.add( 're-search-hidden' );
 		document.querySelector( '.re-search-hide-button' ).classList.add( 're-search-hidden' );
+		document.querySelector( '.re-search-arrow-down' ).classList.add( 're-search-hidden' );
 
 		document.querySelector( '.re-search-tip-text' ).classList.remove( 're-search-hidden' );
 		document.querySelector( '.re-search-approve-tip-button' ).classList.remove( 're-search-hidden' );
 		document.querySelector( '.re-search-deny-tip-button' ).classList.remove( 're-search-hidden' );
+
 		document.querySelector( '.re-search-tip-term' ).innerText = tipTerm;
 	}
 
 	function addListenersToolbar(){
-
 		window.addEventListener( 'change', function(event){
 			if( event.target.id === 'termList' ){
 				var term = document.getElementById( 'termList' ).value;
-
 				safari.self.tab.dispatchMessage('message', {
 					action: 'updateTabURL',
 					term: term
@@ -279,6 +284,10 @@
 
 		window.addEventListener( 'click', function( event ){
 			if( event.target.classList.contains( 're-search-tip-button' ) ){
+				if(typeof elements === 'undefined'){
+					return false;
+				}
+
 				if (elements[0].value.length > 0) {
 					showTip(elements[0].value);
 				}
@@ -286,7 +295,7 @@
 		});
 
 		window.addEventListener( 'click', function( event ){
-			if( event.target.contains( 're-search-deny-tip-button' ) ){
+			if( event.target.classList.contains( 're-search-deny-tip-button' ) ){
 				hideTip();
 			}
 		});
