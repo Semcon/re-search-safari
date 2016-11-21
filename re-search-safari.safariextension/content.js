@@ -5,10 +5,9 @@
 	var titleTerm = false;
 	var listenersAdded = false;
 	var lastSentTerm = false;
-	var tipUrl = 'http://semcon.com/re-search-tip';
 	var shareUrl = 'http://semcon.com/re-search';
-	var shareTitle = 'Re-Search';	var transformString = 'transform: matrix3d(1,0,0.00,0,0.00,1,0.00,0,0,0,1,0,0,60,0,1);';
-
+	var shareTitle = 'Re-Search';
+	var transformString = 'transform: matrix3d(1,0,0.00,0,0.00,1,0.00,0,0,0,1,0,0,60,0,1);';
 
 	//Toolbar functions
 
@@ -188,19 +187,24 @@
 	}
 
 	function removeToolbar(){
-         var body = document.querySelectorAll( 'body' )[ 0 ];
-         var toolbar = document.getElementById( 're-search-toolbar' );
-         for( var i = 0; i < body.children.length; i = i + 1 ){
-             currentStyle = body.children[ i ].getAttribute( 'style' );
-             if( currentStyle ){
-                 newStyle = currentStyle.replace( transformString, '' );
-                 body.children[ i ].setAttribute( 'style', newStyle );
-             }
-         }
-         if( toolbar ){
-             toolbar.remove();
-         }
-     }
+		var body = document.querySelectorAll( 'body' )[ 0 ];
+		var toolbar = document.getElementById( 're-search-toolbar' );
+		var currentStyle;
+		var newStyle;
+
+		for( var i = 0; i < body.children.length; i = i + 1 ){
+			currentStyle = body.children[ i ].getAttribute( 'style' );
+
+			if( currentStyle ){
+				newStyle = currentStyle.replace( transformString, '' );
+				body.children[ i ].setAttribute( 'style', newStyle );
+			}
+		}
+
+		if( toolbar ){
+			toolbar.remove();
+		}
+	}
 
 	function approveTip(){
 		document.querySelector( '.re-search-tip-text' ).classList.add( 're-search-hidden' );
@@ -318,8 +322,6 @@
 		});
 	}
 
-
-
 	function sendTerm(term) {
 		if(typeof term === 'undefined'){
 			return false;
@@ -341,7 +343,8 @@
 		});
 	}
 
-	function resizeWindow(width, height, left, top){
+	// eslint-disable-next-line max-params
+	function resizeWindow( width, height, left, top ){
 		window.resizeTo(width, height);
 		window.moveTo(left, top);
 	}
@@ -388,49 +391,44 @@
 
 
 	safari.self.addEventListener('message', function(response) {
-		if (response.message.hasOwnProperty("selectorSearchField")) {
+		// eslint-disable-next-line no-prototype-builtins
+		if ( response.message.hasOwnProperty( 'selectorSearchField' ) ) {
 
 			if (response.message.selectorSearchField !== false) {
 				inputSelector = response.message.selectorSearchField;
 				init();
 			}
-		}
-
-		else if(response.message.hasOwnProperty('resizeWindow')){
+		// eslint-disable-next-line no-prototype-builtins
+		} else if( response.message.hasOwnProperty( 'resizeWindow' ) ) {
 			resizeWindow(
 				response.message.width,
 				response.message.height,
 				response.message.left,
 				response.message.top
 			);
-		}
-
-		else if(response.message.hasOwnProperty('showBar')){
-			if(response.message.showBar){
+		// eslint-disable-next-line no-prototype-builtins
+		} else if( response.message.hasOwnProperty( 'showBar' ) ) {
+			if( response.message.showBar ){
 				safari.self.tab.dispatchMessage('message', {
 					action: 'isValidUrl',
 					url: window.location.href
 				});
-			}
-			else{
+			} else {
 				removeToolbar();
 			}
-		}
-
-		else if(response.message.hasOwnProperty('valid')){
-			if(response.message.valid){
+		// eslint-disable-next-line no-prototype-builtins
+		} else if( response.message.hasOwnProperty( 'valid' ) ) {
+			if (response.message.valid ){
 				safari.self.tab.dispatchMessage('message', {
-					action: 'getDropdownTerms',
+					action: 'getDropdownTerms'
 				});
 			}
+		// eslint-disable-next-line no-prototype-builtins
+		} else if( response.message.hasOwnProperty( 'dropdownTerms' ) ) {
+			injectToolbar( response.message.dropdownTerms );
 		}
 
-		else if(response.message.hasOwnProperty('dropdownTerms')){
-			injectToolbar(response.message.dropdownTerms);
-		}
-
-	}, false);
-
+	}, false );
 
 	function init(){
         if( document.readyState !== 'complete' ){
