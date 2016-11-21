@@ -201,7 +201,7 @@
             tabRight = windowRight.tabs[0];
             if(!eventListenerTabRight){
                 tabRight.addEventListener('close', closeHandlerTabRight, false);
-                eventListenerTabRight;
+                eventListenerTabRight = true;
             }
             tabRight.url = link;
             tabRight.activate();
