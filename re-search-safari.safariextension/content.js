@@ -402,7 +402,7 @@
 		setInterval(getTitle, 64);
 
 		window.addEventListener('term', function() {
-			sendTerm ( getSearchTerm() );
+			sendTerm(getSearchTerm());
 		});
 	}
 
@@ -424,14 +424,14 @@
 
 	safari.self.addEventListener('message', function(response) {
 		// eslint-disable-next-line no-prototype-builtins
-		if ( response.message.hasOwnProperty( 'selectorSearchField' ) ) {
+		if (response.message.hasOwnProperty('selectorSearchField')) {
 
 			if (response.message.selectorSearchField !== false) {
 				inputSelector = response.message.selectorSearchField;
 				init();
 			}
 		// eslint-disable-next-line no-prototype-builtins
-		} else if( response.message.hasOwnProperty( 'resizeWindow' ) ) {
+	} else if(response.message.hasOwnProperty('resizeWindow')) {
 			resizeWindow(
 				response.message.width,
 				response.message.height,
@@ -439,8 +439,8 @@
 				response.message.top
 			);
 		// eslint-disable-next-line no-prototype-builtins
-		} else if( response.message.hasOwnProperty( 'showBar' ) ) {
-			if( response.message.showBar ){
+		} else if(response.message.hasOwnProperty('showBar')) {
+			if(response.message.showBar){
 				safari.self.tab.dispatchMessage('message', {
 					action: 'isValidUrl',
 					url: window.location.href
@@ -449,28 +449,28 @@
 				removeToolbar();
 			}
 		// eslint-disable-next-line no-prototype-builtins
-		} else if( response.message.hasOwnProperty( 'valid' ) ) {
+		} else if(response.message.hasOwnProperty('valid')) {
 			if (response.message.valid ){
 				safari.self.tab.dispatchMessage('message', {
 					action: 'getDropdownTerms'
 				});
 			}
 		// eslint-disable-next-line no-prototype-builtins
-		} else if( response.message.hasOwnProperty( 'dropdownTerms' ) ) {
-			injectToolbar( response.message.dropdownTerms );
+		} else if(response.message.hasOwnProperty('dropdownTerms')) {
+			injectToolbar(response.message.dropdownTerms);
 		}
 
 	}, false );
 
 	function init(){
-        if( document.readyState !== 'complete' ){
-            setTimeout( init, 100 );
+        if(document.readyState !== 'complete'){
+            setTimeout(init, 100);
             return false;
         }
-        titleTerm = document.getElementsByTagName( 'title' )[ 0 ].textContent;
+        titleTerm = document.getElementsByTagName('title')[ 0 ].textContent;
 		console.log('window State: ', window.windowState);
         addListeners();
-        sendTerm ( getSearchTerm() );
+        sendTerm(getSearchTerm());
     }
 
 	safari.self.tab.dispatchMessage("getEngineInformation", {
