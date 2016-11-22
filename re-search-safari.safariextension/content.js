@@ -242,10 +242,12 @@
         document.querySelector( '.re-search-hide-button' ).classList.remove( 're-search-hidden' );
 		document.querySelector( '.re-search-arrow-down' ).classList.remove( 're-search-hidden' );
 
-		if (elements[0].value.length > 0) {
+		var term = getSearchTerm();
+
+		if(term){
 			safari.self.tab.dispatchMessage('message', {
 				action: 'sendTip',
-				tipTerm: elements[0].value
+				tipTerm: term
 			});
 		}
 	}
@@ -355,6 +357,10 @@
 			return false;
 		}
 
+		if(!term){
+			return false;
+		}
+
 		lastSentTerm = term;
 
 		safari.self.tab.dispatchMessage("searchForTerm", {
@@ -396,7 +402,7 @@
 		setInterval(getTitle, 64);
 
 		window.addEventListener('term', function() {
-			getSearchTerm();
+			sendTerm ( getSearchTerm() );
 		});
 	}
 
@@ -409,8 +415,10 @@
 
 		var element = elements[0];
 		if (element.value.length > 0) {
-			sendTerm(element.value);
+			return element.value;
 		}
+
+		return false;
 	}
 
 
@@ -460,8 +468,9 @@
             return false;
         }
         titleTerm = document.getElementsByTagName( 'title' )[ 0 ].textContent;
+		console.log('window State: ', window.windowState);
         addListeners();
-        getSearchTerm();
+        sendTerm ( getSearchTerm() );
     }
 
 	safari.self.tab.dispatchMessage("getEngineInformation", {
