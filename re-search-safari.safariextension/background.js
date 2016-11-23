@@ -28,7 +28,7 @@ var currentURL;
 var jsonData;
 
 var DATA_URL = 'https://api.myjson.com/bins/1bv2i';
-var TIP_URL = 'http://semcon.com/re-search-tip';
+var TIP_URL = 'http://semcon.com/re-search-tip/';
 
 var resizeNextContent = false;
 
@@ -188,7 +188,8 @@ function sendTip(tipTerm){
             console.log( 'Tip sent' );
         }
     }
-    xhr.send( 'term=' + tipTerm );
+    
+    xhr.send( 'term=' + encodeURIComponent( latestTerm ).replace( /%20/g, '+' ) );
 }
 
 // eslint-disable-next-line max-params
