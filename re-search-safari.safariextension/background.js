@@ -188,8 +188,8 @@ function sendTip(tipTerm){
             console.log( 'Tip sent' );
         }
     }
-    
-    xhr.send( 'term=' + encodeURIComponent( latestTerm ).replace( /%20/g, '+' ) );
+
+    xhr.send( 'term=' + encodeURIComponent( tipTerm ).replace( /%20/g, '+' ) );
 }
 
 // eslint-disable-next-line max-params
