@@ -29,7 +29,7 @@
 	var titleTerm = false;
 	var listenersAdded = false;
 	var lastSentTerm = false;
-	var shareUrl = 'http://semcon.com/re-search';
+	var shareUrl = 'http://semcon.com/re-search/';
 	var shareTitle = 'Re-Search';
 	var transformString = 'transform: matrix3d(1,0,0.00,0,0.00,1,0.00,0,0,0,1,0,0,60,0,1);';
 
