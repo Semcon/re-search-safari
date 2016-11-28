@@ -29,6 +29,7 @@ var jsonData;
 
 var DATA_URL = 'https://raw.githubusercontent.com/Semcon/re-search-config/master/data.json';
 var TIP_URL = 'http://semcon.com/re-search-tip/';
+var TERM_UPDATE_INTERVAL = 3600000;
 
 var resizeNextContent = false;
 
@@ -183,7 +184,7 @@ function loadTerms(){
 }
 
 loadTerms();
-setInterval( loadTerms, 21600000 );
+setInterval( loadTerms, TERM_UPDATE_INTERVAL );
 
 function sendTip(tipTerm){
     var xhr = new XMLHttpRequest();
