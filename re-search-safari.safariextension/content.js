@@ -409,7 +409,6 @@
 	function getSearchTerm() {
 		elements = document.querySelectorAll(inputSelector);
 		if (elements.length === 0) {
-			setTimeout(getSearchTerm, 100);
 			return false;
 		}
 
@@ -418,9 +417,20 @@
 			return element.value;
 		}
 
-		return false;
+		return '';
 	}
 
+	function sendStartTerm(){
+        var term = getSearchTerm();
+
+        if( term === false ){
+            setTimeout( sendStartTerm, 100 );
+
+            return false;
+        }
+
+        sendTerm( term );
+    }
 
 	safari.self.addEventListener('message', function(response) {
 		// eslint-disable-next-line no-prototype-builtins
@@ -470,7 +480,8 @@
         titleTerm = document.getElementsByTagName('title')[ 0 ].textContent;
 		console.log('window State: ', window.windowState);
         addListeners();
-        sendTerm(getSearchTerm());
+
+        sendStartTerm();
     }
 
 	safari.self.tab.dispatchMessage("getEngineInformation", {
