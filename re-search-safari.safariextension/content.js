@@ -478,9 +478,8 @@
             return false;
         }
         titleTerm = document.getElementsByTagName('title')[ 0 ].textContent;
-		console.log('window State: ', window.windowState);
-        addListeners();
 
+        addListeners();
         sendStartTerm();
     }
 
