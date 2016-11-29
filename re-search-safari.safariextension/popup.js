@@ -45,6 +45,13 @@
         }
     } );
 
+    window.addEventListener( 'click', function( event ){
+        if( event.target.nodeName === 'A' ){
+            event.preventDefault();
+            safari.application.activeBrowserWindow.openTab().url = event.target.href;
+        }
+    });
+
     if(safari.extension.globalPage.contentWindow.showBar){
         document.querySelector( '.re-search-yes-no-toggle' ).classList.add( 'enabled' );
     }
