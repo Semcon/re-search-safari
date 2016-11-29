@@ -46,7 +46,7 @@
     } );
 
     window.addEventListener( 'click', function( event ){
-        if( event.target.nodeName === 'A' ){
+        if( event.target.nodeName === 'A' && !event.target.classList.contains( 're-search-yes-no-text' ) ){
             event.preventDefault();
             safari.application.activeBrowserWindow.openTab().url = event.target.href;
         }
